@@ -17,9 +17,14 @@ export async function addPosition(
   const ticker = formData.get("ticker") as string | null;
   const quantity = formData.get("quantity") as string | null;
   const costBasis = formData.get("cost_basis") as string | null;
+  const transactedAt = formData.get("transacted_at") as string | null;
 
   if (!ticker || !quantity || !costBasis) {
     return { error: "All fields are required." };
+  }
+
+  if (transactedAt && isNaN(new Date(transactedAt).getTime())) {
+    return { error: "Invalid transaction date." };
   }
 
   const parsedQuantity = parseFloat(quantity);
@@ -64,11 +69,24 @@ export async function addPosition(
     cost_basis: parsedCostBasis,
   };
 
-  const { error } = await supabase.from("positions").insert(position);
+  const { data: inserted, error } = await supabase
+    .from("positions")
+    .insert(position)
+    .select("id")
+    .single();
 
   if (error) {
     return { error: error.message };
   }
+
+  await supabase.from("transactions").insert({
+    position_id: inserted.id,
+    ticker: normalizedTicker,
+    type: "buy",
+    quantity: parsedQuantity,
+    price_per_share: parsedCostBasis,
+    ...(transactedAt ? { transacted_at: transactedAt } : {}),
+  });
 
   revalidatePath("/portfolio");
   return { success: true };
@@ -82,12 +100,23 @@ export async function addTransaction(
   const type = (formData.get("type") as string | null) ?? "buy";
   const quantity = formData.get("quantity") as string | null;
   const costBasis = formData.get("cost_basis") as string | null;
+  const sellPrice = formData.get("sell_price") as string | null;
+  const transactedAt = formData.get("transacted_at") as string | null;
 
   if (type !== "buy" && type !== "sell") {
     return { error: "Invalid transaction type." };
   }
 
-  if (!id || !quantity || (type === "buy" && !costBasis)) {
+  if (transactedAt && isNaN(new Date(transactedAt).getTime())) {
+    return { error: "Invalid transaction date." };
+  }
+
+  if (
+    !id ||
+    !quantity ||
+    (type === "buy" && !costBasis) ||
+    (type === "sell" && !sellPrice)
+  ) {
     return { error: "All fields are required." };
   }
 
@@ -105,11 +134,19 @@ export async function addTransaction(
     }
   }
 
+  let parsedSellPrice = 0;
+  if (type === "sell") {
+    parsedSellPrice = parseFloat(sellPrice as string);
+    if (isNaN(parsedSellPrice) || parsedSellPrice <= 0) {
+      return { error: "Sell price must be a positive number." };
+    }
+  }
+
   const supabase = await createClient();
 
   const { data: existing, error: fetchError } = await supabase
     .from("positions")
-    .select("quantity, cost_basis")
+    .select("ticker, quantity, cost_basis")
     .eq("id", id)
     .single();
 
@@ -117,6 +154,7 @@ export async function addTransaction(
     return { error: fetchError?.message ?? "Position not found." };
   }
 
+  const ticker = existing.ticker as string;
   const oldQuantity = existing.quantity as number;
   const oldCostBasis = existing.cost_basis as number;
 
@@ -127,15 +165,6 @@ export async function addTransaction(
 
     const newQuantity = oldQuantity - parsedQuantity;
 
-    if (newQuantity === 0) {
-      const { error } = await supabase.from("positions").delete().eq("id", id);
-      if (error) {
-        return { error: error.message };
-      }
-      revalidatePath("/portfolio");
-      return { success: true };
-    }
-
     const { error } = await supabase
       .from("positions")
       .update({ quantity: newQuantity })
@@ -144,6 +173,15 @@ export async function addTransaction(
     if (error) {
       return { error: error.message };
     }
+
+    await supabase.from("transactions").insert({
+      position_id: id,
+      ticker,
+      type: "sell",
+      quantity: parsedQuantity,
+      price_per_share: parsedSellPrice,
+      ...(transactedAt ? { transacted_at: transactedAt } : {}),
+    });
 
     revalidatePath("/portfolio");
     return { success: true };
@@ -162,6 +200,15 @@ export async function addTransaction(
   if (error) {
     return { error: error.message };
   }
+
+  await supabase.from("transactions").insert({
+    position_id: id,
+    ticker,
+    type: "buy",
+    quantity: parsedQuantity,
+    price_per_share: parsedCostBasis,
+    ...(transactedAt ? { transacted_at: transactedAt } : {}),
+  });
 
   revalidatePath("/portfolio");
   return { success: true };

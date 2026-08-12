@@ -8,6 +8,7 @@ import { calcWeights } from "@/lib/finance/allocation";
 import { PositionsTable } from "./positions-table";
 import { AllocationChart } from "./allocation-chart";
 import { RiskMetricsCard } from "./risk-metrics-card";
+import { PerformanceChart } from "./performance-chart";
 
 interface RiskMetrics {
   beta: number;
@@ -149,6 +150,15 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
     <div className="flex flex-col gap-8">
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      )}
+
+      {positions.length > 0 && (
+        <PerformanceChart
+          positions={positions.map((p) => ({
+            ticker: p.ticker,
+            quantity: p.quantity,
+          }))}
+        />
       )}
 
       <div>

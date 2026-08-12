@@ -3,46 +3,44 @@
 # AlphaStrat — Personal Finance Web App
 
 ## Tech Stack
-- Next.js (App Router, TypeScript, Tailwind CSS v4)
-- Supabase (Auth + Postgres database)
+- Next.js 16.3 (App Router, React 19, TypeScript, Tailwind CSS v4)
+- Supabase (Auth + Postgres with RLS)
+- Recharts for charts
 - Deployed on Vercel free tier
-- Cost control is a priority — hobby project, not commercial
+- Cost control is the overriding constraint
 
-## Architecture Decisions
+## Architecture
+- No Python — all data fetching via Node.js `fetch()` directly
+- Yahoo Finance v8/v10 REST endpoints for market data (no yfinance)
+- Reddit OAuth HTTP API for sentiment (no PRAW) — Phase 5
+- Generic cache utility: `lib/cache/index.ts` → `getOrFetch<T>()`
+- Cache table with `cache_key`, `cache_type`, `data` (jsonb), `expires_at`
+- Pure financial calculation functions in `lib/finance/` — all unit tested
+- Server Actions for mutations, API Routes for data fetching
+- `cookies()` is async in Next.js 16
+- `useActionState` (React 19) for form handling
 
-### Data & Caching
-- Analysis runs on-demand with cache-freshness checks, NOT scheduled cron jobs
-- Always check whether cached data is still fresh before triggering a new scrape or LLM call
-- Freshness targets: prices/fundamentals = trading day, sentiment = 4-12 hours, bull/bear/base thesis = ~1 week
-- Auth required on all user-scoped data (positions, watchlists) via Supabase Auth
+## Key Files
+- `lib/cache/index.ts` — generic cache-first utility
+- `lib/cache/freshness.ts` — TTL constants
+- `lib/market/yahoo.ts` — Yahoo Finance client (getQuote, getHistorical)
+- `lib/finance/pnl.ts`, `risk.ts`, `allocation.ts` — pure calculation functions
+- `app/portfolio/actions.ts` — server actions (addPosition, addTransaction, deletePosition)
+- `app/api/market/quote/route.ts` — quote API with caching
+- `app/api/market/search/route.ts` — ticker autocomplete via Yahoo search
+- `app/api/analysis/risk-metrics/route.ts` — beta, Sharpe vs SPY benchmark
 
-### LLM Usage
-- Use Claude Haiku for routine sentiment scoring and analysis calls (~$0-5/month target)
-- Only use a stronger model if explicitly asked
-
-### Sentiment Sources
-- Reddit (via PRAW) and StockTwits ONLY for sentiment
-- NO Twitter/X scraping or API (decided against due to cost and fragility)
-- NO TradingView integration (no viable third-party data API — manual ticker entry only)
-
-### Market Data
-- yfinance for market data and earnings calendar
-- Manual ticker entry for portfolio positions (no brokerage import)
-
-## Features (Build Order)
-1. Portfolio analyzer core (manual entry, PnL, allocation chart, risk metrics, AI style/risk summary)
-2. Auth layer (Supabase Auth, scope all data to users)
-3. Watchlist + market data (yfinance) + earnings calendar + caching layer
-4. Real-time PnL dashboard (websocket/polling — architecturally distinct phase)
-5. Sentiment pipeline (Reddit + StockTwits, Haiku summarization)
-6. Bull/bear/base thesis generation + valuation screening
-7. Remaining test coverage and polish
-
-## Testing
-- Write tests for financial calculations (PnL, beta, Sharpe ratio, CAGR) as each one is built
-- These are silent-failure prone — verify against known values, don't defer
+## Database Tables
+- `positions` — user_id, ticker, quantity, cost_basis (blended average)
+- `cache` — generic cache with jsonb data and expiry
 
 ## Commands
-- `npm run dev` — start dev server
+- `npm run dev` — start dev server (port 3000)
 - `npm run build` — production build
-- `npm run lint` — run ESLint
+- `npm run lint` — ESLint
+- `npx vitest` — run tests
+
+## Subagent Workflow
+- Opus orchestrates and reviews
+- Sonnet subagents implement (use `model: "sonnet"` on Agent tool)
+- Update `DECISIONS.md` after each significant engineering decision

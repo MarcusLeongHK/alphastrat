@@ -78,9 +78,11 @@ export function AddPositionForm() {
     setShowSuggestions(false);
   }
 
+  const today = new Date().toISOString().split("T")[0];
+
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <div className="relative flex flex-col gap-1.5">
           <label
             htmlFor="ticker"
@@ -169,6 +171,21 @@ export function AddPositionForm() {
             min="0.01"
             placeholder="150.00"
             required
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="transacted_at"
+            className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          >
+            Date (optional)
+          </label>
+          <input
+            id="transacted_at"
+            name="transacted_at"
+            type="date"
+            max={today}
             className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
           />
         </div>

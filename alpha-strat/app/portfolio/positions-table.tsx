@@ -9,6 +9,7 @@ import {
   calcTotalMarketValue,
 } from "@/lib/finance/pnl";
 import { deletePosition, addTransaction, type ActionResult } from "./actions";
+import { TransactionLog } from "./transaction-log";
 
 const initialState: ActionResult = {};
 
@@ -53,6 +54,7 @@ function AddTransactionRow({
     initialState
   );
   const [type, setType] = useState<"buy" | "sell">("buy");
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     if (state.success) {
@@ -114,6 +116,28 @@ function AddTransactionRow({
               />
             </label>
           )}
+          {type === "sell" && (
+            <label className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Sell Price
+              <input
+                type="number"
+                name="sell_price"
+                required
+                min="0.01"
+                step="0.01"
+                className="w-24 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 tabular-nums focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              />
+            </label>
+          )}
+          <label className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            Date
+            <input
+              type="date"
+              name="transacted_at"
+              max={today}
+              className="w-36 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 tabular-nums focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </label>
           <button
             type="submit"
             disabled={isPending}
@@ -159,6 +183,10 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
   const [openTransactionId, setOpenTransactionId] = useState<string | null>(
     null
   );
+  const [expandedPositionId, setExpandedPositionId] = useState<string | null>(
+    null
+  );
+  const [txRefreshKey, setTxRefreshKey] = useState(0);
 
   if (positions.length === 0) {
     return (
@@ -240,73 +268,123 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ position: p, currentPrice, marketValue, pnl, pnlPercent }) => (
-            <Fragment key={p.id}>
-              <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
+          {rows.map(({ position: p, currentPrice, marketValue, pnl, pnlPercent }) => {
+            const isClosed = p.quantity === 0;
+            const isExpanded = expandedPositionId === p.id;
+            const mutedText = isClosed
+              ? "text-zinc-400 dark:text-zinc-600"
+              : "text-zinc-700 dark:text-zinc-300";
 
-                <td className="py-3 pr-4 font-mono font-medium text-zinc-900 dark:text-zinc-100">
-                  {p.ticker}
-                </td>
-                <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                  {p.quantity}
-                </td>
-                <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                  ${p.cost_basis.toFixed(2)}
-                </td>
-                <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                  ${(p.quantity * p.cost_basis).toFixed(2)}
-                </td>
-                <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                  {currentPrice !== null ? `$${currentPrice.toFixed(2)}` : "—"}
-                </td>
-                <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                  {marketValue !== null ? `$${formatUsd(marketValue)}` : "—"}
-                </td>
-                <td
-                  className={`py-3 pr-4 text-right tabular-nums ${
-                    pnl !== null ? pnlColor(pnl) : "text-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  {pnl !== null ? `${pnl >= 0 ? "+" : ""}$${formatUsd(pnl)}` : "—"}
-                </td>
-                <td
-                  className={`py-3 pr-4 text-right tabular-nums ${
-                    pnlPercent !== null
-                      ? pnlColor(pnlPercent)
-                      : "text-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  {pnlPercent !== null
-                    ? `${pnlPercent >= 0 ? "+" : ""}${pnlPercent.toFixed(2)}%`
-                    : "—"}
-                </td>
-                <td className="py-3 text-right">
-                  <div className="flex items-center justify-end gap-3">
+            return (
+              <Fragment key={p.id}>
+                <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
+                  <td
+                    className={`py-3 pr-4 font-mono font-medium ${
+                      isClosed
+                        ? "text-zinc-400 dark:text-zinc-600"
+                        : "text-zinc-900 dark:text-zinc-100"
+                    }`}
+                  >
                     <button
                       type="button"
                       onClick={() =>
-                        setOpenTransactionId(
-                          openTransactionId === p.id ? null : p.id
-                        )
+                        setExpandedPositionId(isExpanded ? null : p.id)
                       }
-                      className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                      className="flex items-center gap-1.5"
                     >
-                      {openTransactionId === p.id ? "Close" : "Add Transaction"}
+                      <span
+                        className={`inline-block text-xs text-zinc-400 transition-transform duration-200 dark:text-zinc-500 ${
+                          isExpanded ? "rotate-90" : ""
+                        }`}
+                      >
+                        ▶
+                      </span>
+                      {p.ticker}
                     </button>
-                    <DeleteButton id={p.id} />
-                  </div>
-                </td>
-              </tr>
-              {openTransactionId === p.id && (
-                <AddTransactionRow
-                  id={p.id}
-                  colSpan={9}
-                  onDone={() => setOpenTransactionId(null)}
-                  onCancel={() => setOpenTransactionId(null)}
-                />
-              )}
-            </Fragment>
-          ))}
+                  </td>
+                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                    {p.quantity}
+                  </td>
+                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                    ${p.cost_basis.toFixed(2)}
+                  </td>
+                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                    ${(p.quantity * p.cost_basis).toFixed(2)}
+                  </td>
+                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                    {currentPrice !== null ? `$${currentPrice.toFixed(2)}` : "—"}
+                  </td>
+                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                    {marketValue !== null ? `$${formatUsd(marketValue)}` : "—"}
+                  </td>
+                  <td
+                    className={`py-3 pr-4 text-right tabular-nums ${
+                      isClosed
+                        ? mutedText
+                        : pnl !== null
+                        ? pnlColor(pnl)
+                        : "text-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    {pnl !== null ? `${pnl >= 0 ? "+" : ""}$${formatUsd(pnl)}` : "—"}
+                  </td>
+                  <td
+                    className={`py-3 pr-4 text-right tabular-nums ${
+                      isClosed
+                        ? mutedText
+                        : pnlPercent !== null
+                        ? pnlColor(pnlPercent)
+                        : "text-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    {pnlPercent !== null
+                      ? `${pnlPercent >= 0 ? "+" : ""}${pnlPercent.toFixed(2)}%`
+                      : "—"}
+                  </td>
+                  <td className="py-3 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      {isClosed ? (
+                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                          Closed
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenTransactionId(
+                              openTransactionId === p.id ? null : p.id
+                            )
+                          }
+                          className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        >
+                          {openTransactionId === p.id ? "Close" : "Add Transaction"}
+                        </button>
+                      )}
+                      <DeleteButton id={p.id} />
+                    </div>
+                  </td>
+                </tr>
+                {isExpanded && (
+                  <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
+                    <td colSpan={9} className="py-2 pl-6 pr-4">
+                      <TransactionLog positionId={p.id} refreshKey={txRefreshKey} />
+                    </td>
+                  </tr>
+                )}
+                {openTransactionId === p.id && (
+                  <AddTransactionRow
+                    id={p.id}
+                    colSpan={9}
+                    onDone={() => {
+                      setOpenTransactionId(null);
+                      setTxRefreshKey((k) => k + 1);
+                    }}
+                    onCancel={() => setOpenTransactionId(null)}
+                  />
+                )}
+              </Fragment>
+            );
+          })}
         </tbody>
         <tfoot>
           <tr className="border-t border-zinc-200 font-medium dark:border-zinc-800">

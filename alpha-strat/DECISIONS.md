@@ -392,4 +392,110 @@ Every significant architecture and implementation decision, with the options con
 
 ---
 
+## Decision 20: Transaction Log — Client-Side Fetch vs Server Component
+
+**Date:** Phase 1 (transaction history)
+
+**Options considered:**
+1. **Server Component with async data** — fetch transactions server-side, pass as props
+2. **Client-side fetch on expand** — lazy-load transactions via API route when user clicks to expand
+3. **Preload all transactions with positions** — single query joins positions + transactions
+
+**Decision:** Client-side fetch on expand
+
+**Reasoning:** Transaction history is a secondary concern — most users look at positions and PnL, not individual trades. Loading transactions for all positions upfront wastes bandwidth and slows initial page load. Server Components can't be conditionally rendered inside client interactive components (the expand/collapse is client state). The API route (`/api/portfolio/transactions?position_id=X`) keeps the data fetch lazy and the component self-contained. A `refreshKey` prop triggers re-fetch after new transactions are added while the log is expanded.
+
+---
+
+## Decision 21: Sell-to-Zero — Delete vs Preserve Position
+
+**Date:** Phase 1 (sell transactions)
+
+**Options considered:**
+1. **Delete position at zero shares** — cascade deletes transactions, clean positions table
+2. **Keep position with quantity=0** — mark as "Closed", preserve all transaction history
+3. **Soft delete with a `closed_at` timestamp** — filter from active view but keep data
+
+**Decision:** Keep position with quantity=0, show "Closed" badge
+
+**Reasoning:** Transaction history is the primary value of the transaction log feature. Deleting the position cascades to delete all transactions (per the foreign key), destroying the user's trade history. Keeping zero-quantity positions with muted styling and a "Closed" badge preserves history while clearly distinguishing active from closed positions. The positions table constraint was relaxed from `quantity > 0` to `quantity >= 0`. The explicit "Delete" button still exists for intentional cleanup — that cascade-deletes transactions by design, since the user is explicitly choosing to remove all data.
+
+---
+
+## Decision 22: Performance Chart — Normalized Returns vs Absolute Price
+
+**Date:** Phase 1 (portfolio performance)
+
+**Options considered:**
+1. **Absolute price chart** — show portfolio dollar value over time
+2. **Normalized percentage returns** — show % change from day 0 for portfolio and comparisons
+3. **Indexed to 100** — normalize all series to start at 100
+
+**Decision:** Normalized percentage returns
+
+**Reasoning:** The chart's primary use case is comparing portfolio performance against benchmarks (SPY, QQQ) and individual stocks. Absolute prices are incomparable — SPY at $500 vs AAPL at $300 tells you nothing. Normalizing to percentage returns from a common start date makes apples-to-apples comparison possible. The Y-axis shows "-20%", "20%", "40%" etc., making it immediately clear which investment outperformed. This is the same approach used by Google Finance, Yahoo Finance, and professional portfolio tools. Indexing to 100 is equivalent mathematically but percentage returns are more intuitive for retail investors.
+
+---
+
+## Decision 23: Transaction Table user_id — NOT NULL vs Nullable Pre-Auth
+
+**Date:** Phase 1 (bug fix)
+
+**Context:** Transaction inserts were silently failing because the `user_id` column defaulted to `auth.uid()` (null without auth) but had a `NOT NULL` constraint.
+
+**Options considered:**
+1. **Make user_id nullable** — match positions table approach, fix in Phase 2 auth
+2. **Hard-code a dev UUID** — insert a fake user_id for development
+3. **Set up auth first** — prioritize Phase 2 to unblock transactions
+
+**Decision:** Make user_id nullable, matching the positions table
+
+**Reasoning:** Positions already use nullable user_id as a temporary dev bypass. Consistency matters — having one table nullable and another NOT NULL creates confusing silent failures (the insert returns no error via Supabase client, it just doesn't insert). Phase 2 auth will enforce `NOT NULL` on both tables simultaneously. The alternative of hard-coding a UUID would require cleanup later and doesn't match the existing pattern.
+
+---
+
+## Decision 24: Optional Transaction Date — Native Calendar vs Date Picker Library
+
+**Date:** Phase 1 (enhancement)
+
+**Options considered:**
+1. **Native HTML `<input type="date">`** — built-in calendar picker, zero dependencies
+2. **React date picker library (react-datepicker, react-day-picker)** — richer UI, more customization
+3. **No date field** — always use current date
+
+**Decision:** Native HTML date input
+
+**Reasoning:** The native date input provides a calendar picker in all modern browsers with zero bundle size cost. A library like react-datepicker adds ~30KB gzipped and introduces a dependency to maintain. The field is optional — defaults to the DB's `now()` when left blank. We cap `max` to today's date to prevent future-dated transactions. For a personal finance app where you're occasionally backdating a trade you forgot to log, the native picker is sufficient. If we needed date ranges, time selection, or complex validation, a library would be worth it.
+
+---
+
+## Decision 25: Performance Chart Date Range — Full History vs Transaction-Bounded
+
+**Date:** Phase 1 (bug fix)
+
+**Context:** The 1Y chart showed data from a year ago even though no positions existed back then, creating misleading flat lines before the first transaction.
+
+**Options considered:**
+1. **Full historical range** — always show the complete range (1M/3M/6M/1Y from today)
+2. **Start from earliest transaction date** — query `transactions` table for the earliest `transacted_at`
+3. **Start from position `created_at`** — use the positions table timestamp
+
+**Decision:** Start from the earliest transaction date, fall back to full range if no transactions exist
+
+**Reasoning:** The chart should reflect the period the portfolio actually existed. Showing returns before any positions were held is meaningless — you'd see flat lines or misleading jumps when the first purchase appears. Querying `MIN(transacted_at)` from the transactions table gives the true portfolio inception date. The fallback handles legacy positions created before the transactions feature was added (they have no transaction rows). Using `positions.created_at` would work but is less precise — a user might backdate a transaction to when they actually bought it.
+
+---
+
+## Decision 26: Yahoo Finance Range Parameter Mapping
+
+**Date:** Phase 1 (bug fix)
+
+**Context:** The 1M, 3M, and 6M performance chart ranges returned only 1 data point. The frontend passed `1m`, `3m`, `6m` but Yahoo Finance v8 API expects `1mo`, `3mo`, `6mo`. Only `1y` happened to match.
+
+**Fix:** Added a `RANGE_TO_YAHOO` mapping in the performance API route that converts frontend range values (`1m` → `1mo`, `3m` → `3mo`, `6m` → `6mo`, `1y` → `1y`) before passing to `getHistorical()`. The cache key still uses the frontend format for consistency.
+
+**Lesson:** When wrapping a third-party API, validate the parameter contract early — "looks right" doesn't mean "is right." Yahoo's range parameter silently returns minimal data for unrecognized values rather than erroring, making this easy to miss.
+
+---
+
 *This log will be updated as new decisions are made in Phases 2-7.*

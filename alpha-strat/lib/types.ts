@@ -13,3 +13,14 @@ export interface PositionInsert {
   quantity: number;
   cost_basis: number;
 }
+
+export interface Transaction {
+  id: string;
+  user_id: string;
+  position_id: string;
+  ticker: string;
+  type: "buy" | "sell";
+  quantity: number;
+  price_per_share: number;
+  transacted_at: string;
+}
