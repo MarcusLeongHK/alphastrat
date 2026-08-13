@@ -20,9 +20,14 @@ export interface HistoricalBar {
 
 export interface EarningsData {
   ticker: string;
-  earningsDate: string | null; // ISO date of next earnings, null if unknown
+  earningsDate: string | null;
   epsEstimate: number | null;
+  epsHigh: number | null;
+  epsLow: number | null;
   revenueEstimate: number | null;
+  revenueHigh: number | null;
+  revenueLow: number | null;
+  marketCap: number | null;
 }
 
 export interface AnalystData {

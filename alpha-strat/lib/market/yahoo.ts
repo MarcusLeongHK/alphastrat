@@ -179,7 +179,11 @@ interface YahooRawValue {
 interface YahooEarningsCalendar {
   earningsDate?: YahooRawValue[];
   earningsAverage?: YahooRawValue;
+  earningsHigh?: YahooRawValue;
+  earningsLow?: YahooRawValue;
   revenueAverage?: YahooRawValue;
+  revenueHigh?: YahooRawValue;
+  revenueLow?: YahooRawValue;
 }
 
 interface YahooFinancialData {
@@ -196,6 +200,9 @@ interface YahooQuoteSummaryResult {
     earnings?: YahooEarningsCalendar;
   };
   financialData?: YahooFinancialData;
+  summaryDetail?: {
+    marketCap?: YahooRawValue;
+  };
 }
 
 interface YahooQuoteSummaryResponse {
@@ -256,7 +263,12 @@ export async function getEarnings(ticker: string): Promise<EarningsData> {
     ticker,
     earningsDate: null,
     epsEstimate: null,
+    epsHigh: null,
+    epsLow: null,
     revenueEstimate: null,
+    revenueHigh: null,
+    revenueLow: null,
+    marketCap: null,
   };
 
   try {
@@ -265,7 +277,7 @@ export async function getEarnings(ticker: string): Promise<EarningsData> {
 
     const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(
       ticker,
-    )}?modules=calendarEvents&crumb=${encodeURIComponent(auth.crumb)}`;
+    )}?modules=calendarEvents,summaryDetail&crumb=${encodeURIComponent(auth.crumb)}`;
 
     const response = await fetch(url, {
       headers: {
@@ -291,11 +303,18 @@ export async function getEarnings(ticker: string): Promise<EarningsData> {
         ? new Date(earningsTimestamp * 1000).toISOString().slice(0, 10)
         : null;
 
+    const marketCapRaw = result?.summaryDetail?.marketCap?.raw ?? null;
+
     return {
       ticker,
       earningsDate,
       epsEstimate: earnings.earningsAverage?.raw ?? null,
+      epsHigh: earnings.earningsHigh?.raw ?? null,
+      epsLow: earnings.earningsLow?.raw ?? null,
       revenueEstimate: earnings.revenueAverage?.raw ?? null,
+      revenueHigh: earnings.revenueHigh?.raw ?? null,
+      revenueLow: earnings.revenueLow?.raw ?? null,
+      marketCap: marketCapRaw,
     };
   } catch {
     return empty;

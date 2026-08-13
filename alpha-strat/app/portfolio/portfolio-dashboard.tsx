@@ -176,6 +176,7 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
 
     return () => {
       cancelled = true;
+      metricsFetchedForRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quotes]);
@@ -261,6 +262,7 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
 
     return () => {
       cancelled = true;
+      aiFetchedForRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enrichedPositions, metrics]);

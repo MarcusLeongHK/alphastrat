@@ -86,6 +86,7 @@ Track tickers of interest with earnings visibility, plus live-updating dashboard
 - [x] Auto-refresh quotes (60s polling, visibility-aware) — from Phase 4
 - [x] Market status indicator (open/closed/pre-market) — from Phase 4
 - [x] Auto-add portfolio positions to watchlist on creation
+- [x] Earnings calendar visualization (3-month grid with ticker badges)
 - [ ] Earnings beat/miss tracking after results
 
 ---

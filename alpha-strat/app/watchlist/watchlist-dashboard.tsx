@@ -81,6 +81,164 @@ function isWithinDays(dateStr: string, days: number): boolean {
   return diffDays >= 0 && diffDays <= days;
 }
 
+function formatMarketCap(value: number): string {
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+  return `$${value.toLocaleString()}`;
+}
+
+function formatRevenue(value: number): string {
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+  return `$${value.toLocaleString()}`;
+}
+
+function daysUntil(dateStr: string): number {
+  const now = new Date();
+  const target = new Date(dateStr);
+  return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function countdownLabel(dateStr: string): string {
+  const days = daysUntil(dateStr);
+  if (days < 0) return `${Math.abs(days)}d ago`;
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  return `In ${days}d`;
+}
+
+function countdownColor(dateStr: string): string {
+  const days = daysUntil(dateStr);
+  if (days < 0) return "text-zinc-400 dark:text-zinc-500";
+  if (days <= 3) return "text-red-500";
+  if (days <= 7) return "text-amber-500";
+  return "text-blue-500 dark:text-blue-400";
+}
+
+function EarningsCalendar({
+  earnings,
+  quotes,
+}: {
+  earnings: EarningsData[];
+  quotes: QuoteData[] | null;
+}) {
+  const withDates = earnings
+    .filter((e) => e.earningsDate !== null)
+    .sort((a, b) => a.earningsDate!.localeCompare(b.earningsDate!));
+
+  if (withDates.length === 0) {
+    return (
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        No upcoming earnings dates available.
+      </p>
+    );
+  }
+
+  const quoteMap = new Map((quotes ?? []).map((q) => [q.ticker, q]));
+
+  const grouped = new Map<string, EarningsData[]>();
+  for (const e of withDates) {
+    const key = e.earningsDate!;
+    const list = grouped.get(key) ?? [];
+    list.push(e);
+    grouped.set(key, list);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {Array.from(grouped.entries()).map(([date, items]) => (
+        <div key={date}>
+          <div className="mb-2 flex items-center gap-3">
+            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              {formatEarningsDate(date)}
+            </span>
+            <span
+              className={`text-xs font-medium ${countdownColor(date)}`}
+            >
+              {countdownLabel(date)}
+            </span>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+                  <th className="px-3 py-2 text-left font-medium text-zinc-500 dark:text-zinc-400">
+                    Ticker
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                    Price
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                    Mkt Cap
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                    EPS Est.
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                    EPS Range
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                    Rev Est.
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                    Rev Range
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((e) => {
+                  const quote = quoteMap.get(e.ticker);
+                  return (
+                    <tr
+                      key={e.ticker}
+                      className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-800/50"
+                    >
+                      <td className="px-3 py-2.5 font-mono font-semibold text-zinc-900 dark:text-zinc-100">
+                        {e.ticker}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                        {quote ? `$${quote.price.toFixed(2)}` : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                        {e.marketCap != null
+                          ? formatMarketCap(e.marketCap)
+                          : quote?.marketCap != null
+                            ? formatMarketCap(quote.marketCap)
+                            : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                        {e.epsEstimate != null
+                          ? `$${e.epsEstimate.toFixed(2)}`
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                        {e.epsLow != null && e.epsHigh != null
+                          ? `$${e.epsLow.toFixed(2)} – $${e.epsHigh.toFixed(2)}`
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                        {e.revenueEstimate != null
+                          ? formatRevenue(e.revenueEstimate)
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                        {e.revenueLow != null && e.revenueHigh != null
+                          ? `${formatRevenue(e.revenueLow)} – ${formatRevenue(e.revenueHigh)}`
+                          : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface WatchlistDashboardProps {
   items: WatchlistItem[];
 }
@@ -430,6 +588,15 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
           </tbody>
         </table>
       </div>
+
+      {earnings && earnings.length > 0 && (
+        <div className="mt-6 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <h3 className="mb-4 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Earnings Calendar
+          </h3>
+          <EarningsCalendar earnings={earnings} quotes={quotes} />
+        </div>
+      )}
     </div>
   );
 }
