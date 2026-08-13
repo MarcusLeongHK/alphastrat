@@ -25,3 +25,10 @@ export interface Transaction {
   price_per_share: number;
   transacted_at: string;
 }
+
+export interface WatchlistItem {
+  id: string;
+  user_id: string;
+  ticker: string;
+  added_at: string;
+}

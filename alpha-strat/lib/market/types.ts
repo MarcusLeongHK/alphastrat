@@ -17,3 +17,20 @@ export interface HistoricalBar {
   close: number;
   volume: number;
 }
+
+export interface EarningsData {
+  ticker: string;
+  earningsDate: string | null; // ISO date of next earnings, null if unknown
+  epsEstimate: number | null;
+  revenueEstimate: number | null;
+}
+
+export interface AnalystData {
+  ticker: string;
+  recommendationKey: string | null; // "buy", "hold", "sell", "strong_buy", "underperform", etc.
+  recommendationMean: number | null; // 1.0 (strong buy) to 5.0 (strong sell)
+  numberOfAnalysts: number | null;
+  targetMeanPrice: number | null;
+  targetHighPrice: number | null;
+  targetLowPrice: number | null;
+}

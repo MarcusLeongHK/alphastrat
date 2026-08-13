@@ -44,6 +44,10 @@
 - `app/api/market/quote/route.ts` — quote API with caching
 - `app/api/market/search/route.ts` — ticker autocomplete via Yahoo search
 - `app/api/analysis/risk-metrics/route.ts` — beta, Sharpe vs SPY benchmark
+- `app/api/watchlist/route.ts` — watchlist CRUD API
+- `app/api/market/earnings/route.ts` — earnings calendar data
+- `app/api/market/analyst/route.ts` — analyst ratings and price targets
+- `app/watchlist/actions.ts` — watchlist server actions
 - `lib/ai/client.ts` — dual-provider AI client (Groq for summaries, Gemini for thesis)
 - `lib/ai/prompts.ts` — system prompts and prompt builders
 
@@ -51,6 +55,7 @@
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)
 - `transactions` — user_id, position_id, ticker, type, quantity, price_per_share, transacted_at
 - `cache` — generic cache with jsonb data and expiry
+- `watchlist` — user_id, ticker, added_at (unique per user+ticker)
 
 ## Commands
 - `npm run dev` — start dev server (port 3000)

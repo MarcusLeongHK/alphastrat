@@ -575,4 +575,42 @@ Every significant architecture and implementation decision, with the options con
 
 ---
 
-*This log will be updated as new decisions are made in Phases 3-7.*
+## Decision 32: Yahoo Finance Earnings — Crumb+Cookie Auth
+
+**Date:** Phase 3
+
+**Context:** The `getEarnings()` function used Yahoo's `v10/finance/quoteSummary` endpoint to fetch earnings dates and EPS estimates. It returned all nulls in production.
+
+**Root cause:** Yahoo's quoteSummary v10 endpoint now requires a `crumb` token + session cookie for authentication. Without it, the endpoint returns HTTP 401. The v8 chart endpoint (used for quotes and historical data) still works without auth.
+
+**Options considered:**
+1. **Crumb+cookie workflow** — Fetch cookie from `fc.yahoo.com`, get crumb from `query2.finance.yahoo.com/v1/test/getcrumb`, pass both on quoteSummary requests
+2. **Alternative data source** — Use a different free API for earnings data
+3. **Scrape from Yahoo Finance HTML** — Parse earnings from the quote page
+
+**Decision:** Crumb+cookie workflow with in-memory caching
+
+**Reasoning:** The crumb+cookie approach is well-documented and reliable. The crumb is cached in-memory for 1 hour to avoid redundant auth requests. Since earnings data is already cached via `getOrFetch` with `EARNINGS_TTL` (24 hours), the crumb overhead is minimal — at most one auth round-trip per server restart. Alternative APIs either cost money or have worse data quality.
+
+---
+
+## Decision 33: Merge Phase 4 into Phase 3 — Eliminate Standalone Phase
+
+**Date:** Phase 3
+
+**Context:** Phase 4 ("Real-Time Dashboard Features") planned: auto-refresh quotes, real-time P&L updates, market status indicator, price movement notifications, dashboard layout improvements.
+
+**Analysis:** Most Phase 4 items are thin:
+- Auto-refresh → a `setInterval` on existing quote fetching, plus visibility-aware pausing
+- P&L updates → free once quotes auto-refresh (P&L derives from quotes)
+- Market status → a small time-based component (~50 lines)
+- Notifications → the only substantial new feature
+- Layout improvements → subjective, fits Phase 7 polish
+
+**Decision:** Merge auto-refresh + market status into Phase 3. Move notifications and layout improvements to Phase 7.
+
+**Reasoning:** Keeping Phase 4 as a standalone phase adds overhead (planning, context-switching, documentation) for ~2 hours of work. Folding the meaningful features into Phase 3 keeps the project moving. Notifications and layout polish are better bundled with Phase 7's production-readiness pass where they'll be considered holistically.
+
+---
+
+*This log will be updated as new decisions are made in Phases 5-7.*

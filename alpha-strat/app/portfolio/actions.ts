@@ -99,7 +99,15 @@ export async function addPosition(
     ...(transactedAt ? { transacted_at: transactedAt } : {}),
   });
 
+  await supabase
+    .from("watchlist")
+    .upsert(
+      { user_id: user.id, ticker: normalizedTicker },
+      { onConflict: "user_id,ticker", ignoreDuplicates: true }
+    );
+
   revalidatePath("/portfolio");
+  revalidatePath("/watchlist");
   return { success: true };
 }
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/auth/actions";
+import { MarketStatus } from "@/app/components/market-status";
 
 export async function Header() {
   const supabase = await createClient();
@@ -26,6 +27,13 @@ export async function Header() {
               >
                 Portfolio
               </Link>
+              <Link
+                href="/watchlist"
+                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                Watchlist
+              </Link>
+              <MarketStatus />
               <span className="text-sm text-zinc-500 dark:text-zinc-400">
                 {user.email}
               </span>

@@ -1,4 +1,4 @@
-import { QuoteData, HistoricalBar } from "./types";
+import { QuoteData, HistoricalBar, EarningsData, AnalystData } from "./types";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -170,4 +170,185 @@ export async function getHistorical(
   bars.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   return bars;
+}
+
+interface YahooRawValue {
+  raw?: number;
+}
+
+interface YahooEarningsCalendar {
+  earningsDate?: YahooRawValue[];
+  earningsAverage?: YahooRawValue;
+  revenueAverage?: YahooRawValue;
+}
+
+interface YahooFinancialData {
+  recommendationKey?: string;
+  recommendationMean?: YahooRawValue;
+  numberOfAnalystOpinions?: YahooRawValue;
+  targetMeanPrice?: YahooRawValue;
+  targetHighPrice?: YahooRawValue;
+  targetLowPrice?: YahooRawValue;
+}
+
+interface YahooQuoteSummaryResult {
+  calendarEvents?: {
+    earnings?: YahooEarningsCalendar;
+  };
+  financialData?: YahooFinancialData;
+}
+
+interface YahooQuoteSummaryResponse {
+  quoteSummary: {
+    result: YahooQuoteSummaryResult[] | null;
+    error: { code?: string; description?: string } | null;
+  };
+}
+
+let cachedCrumb: { crumb: string; cookie: string; expiresAt: number } | null =
+  null;
+
+async function getYahooCrumb(): Promise<{
+  crumb: string;
+  cookie: string;
+} | null> {
+  if (cachedCrumb && Date.now() < cachedCrumb.expiresAt) {
+    return { crumb: cachedCrumb.crumb, cookie: cachedCrumb.cookie };
+  }
+
+  try {
+    const initRes = await fetch("https://fc.yahoo.com", {
+      headers: { "User-Agent": USER_AGENT },
+      redirect: "follow",
+    });
+
+    const setCookie = initRes.headers.get("set-cookie") ?? "";
+    const cookie = setCookie
+      .split(",")
+      .map((c) => c.split(";")[0].trim())
+      .filter(Boolean)
+      .join("; ");
+
+    const crumbRes = await fetch(
+      "https://query2.finance.yahoo.com/v1/test/getcrumb",
+      {
+        headers: {
+          "User-Agent": USER_AGENT,
+          Cookie: cookie,
+        },
+      },
+    );
+
+    if (!crumbRes.ok) return null;
+
+    const crumb = await crumbRes.text();
+    if (!crumb) return null;
+
+    cachedCrumb = { crumb, cookie, expiresAt: Date.now() + 3600_000 };
+    return { crumb, cookie };
+  } catch {
+    return null;
+  }
+}
+
+export async function getEarnings(ticker: string): Promise<EarningsData> {
+  const empty: EarningsData = {
+    ticker,
+    earningsDate: null,
+    epsEstimate: null,
+    revenueEstimate: null,
+  };
+
+  try {
+    const auth = await getYahooCrumb();
+    if (!auth) return empty;
+
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(
+      ticker,
+    )}?modules=calendarEvents&crumb=${encodeURIComponent(auth.crumb)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Cookie: auth.cookie,
+      },
+    });
+
+    if (!response.ok) return empty;
+
+    const json = (await response.json()) as YahooQuoteSummaryResponse;
+
+    if (json.quoteSummary.error) return empty;
+
+    const result = json.quoteSummary.result?.[0];
+    const earnings = result?.calendarEvents?.earnings;
+
+    if (!earnings) return empty;
+
+    const earningsTimestamp = earnings.earningsDate?.[0]?.raw;
+    const earningsDate =
+      earningsTimestamp !== undefined && earningsTimestamp !== null
+        ? new Date(earningsTimestamp * 1000).toISOString().slice(0, 10)
+        : null;
+
+    return {
+      ticker,
+      earningsDate,
+      epsEstimate: earnings.earningsAverage?.raw ?? null,
+      revenueEstimate: earnings.revenueAverage?.raw ?? null,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+export async function getAnalystData(ticker: string): Promise<AnalystData> {
+  const empty: AnalystData = {
+    ticker,
+    recommendationKey: null,
+    recommendationMean: null,
+    numberOfAnalysts: null,
+    targetMeanPrice: null,
+    targetHighPrice: null,
+    targetLowPrice: null,
+  };
+
+  try {
+    const auth = await getYahooCrumb();
+    if (!auth) return empty;
+
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(
+      ticker,
+    )}?modules=financialData&crumb=${encodeURIComponent(auth.crumb)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Cookie: auth.cookie,
+      },
+    });
+
+    if (!response.ok) return empty;
+
+    const json = (await response.json()) as YahooQuoteSummaryResponse;
+
+    if (json.quoteSummary.error) return empty;
+
+    const result = json.quoteSummary.result?.[0];
+    const financialData = result?.financialData;
+
+    if (!financialData) return empty;
+
+    return {
+      ticker,
+      recommendationKey: financialData.recommendationKey ?? null,
+      recommendationMean: financialData.recommendationMean?.raw ?? null,
+      numberOfAnalysts: financialData.numberOfAnalystOpinions?.raw ?? null,
+      targetMeanPrice: financialData.targetMeanPrice?.raw ?? null,
+      targetHighPrice: financialData.targetHighPrice?.raw ?? null,
+      targetLowPrice: financialData.targetLowPrice?.raw ?? null,
+    };
+  } catch {
+    return empty;
+  }
 }

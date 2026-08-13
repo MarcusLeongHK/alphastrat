@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getOrFetch } from "@/lib/cache";
 import { generateCompletion } from "@/lib/ai/client";
 import {
   PORTFOLIO_SUMMARY_SYSTEM,
   buildPortfolioSummaryPrompt,
 } from "@/lib/ai/prompts";
+
+const AI_SUMMARY_TTL = 6 * 3600;
 
 interface PositionInput {
   ticker: string;
@@ -26,6 +29,14 @@ interface AiSummaryRequestBody {
   metrics: MetricsInput;
 }
 
+function buildCacheKey(userId: string, body: AiSummaryRequestBody): string {
+  const fingerprint = body.positions
+    .map((p) => `${p.ticker}:${p.quantity}:${p.costBasis}`)
+    .sort()
+    .join("|");
+  return `ai-summary:${userId}:${fingerprint}`;
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -41,18 +52,24 @@ export async function POST(request: Request) {
     if (!body.positions || !body.metrics) {
       return NextResponse.json(
         { error: "Request body must include positions and metrics" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const userPrompt = buildPortfolioSummaryPrompt(
-      body.positions,
-      body.metrics
-    );
+    const cacheKey = buildCacheKey(claimsData.claims.sub as string, body);
 
-    const summary = await generateCompletion(
-      PORTFOLIO_SUMMARY_SYSTEM,
-      userPrompt
+    const { data: summary } = await getOrFetch<string>(
+      supabase,
+      cacheKey,
+      "ai-summary",
+      AI_SUMMARY_TTL,
+      async () => {
+        const userPrompt = buildPortfolioSummaryPrompt(
+          body.positions,
+          body.metrics,
+        );
+        return generateCompletion(PORTFOLIO_SUMMARY_SYSTEM, userPrompt);
+      },
     );
 
     return NextResponse.json({ summary });
@@ -63,7 +80,7 @@ export async function POST(request: Request) {
           err instanceof Error ? err.message : String(err)
         }`,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
