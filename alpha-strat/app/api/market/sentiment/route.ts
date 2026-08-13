@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getOrFetch } from "@/lib/cache";
-import { getSentiment } from "@/lib/market/stocktwits";
+import { getRecommendationTrend } from "@/lib/market/yahoo";
 import { SENTIMENT_TTL } from "@/lib/cache/freshness";
 import { createClient } from "@/lib/supabase/server";
-import { StockTwitsSentiment } from "@/lib/market/types";
+import { RecommendationTrend } from "@/lib/market/types";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -37,20 +37,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sentiments: StockTwitsSentiment[] = await Promise.all(
+    const trends: RecommendationTrend[] = await Promise.all(
       tickers.map(async (ticker) => {
-        const { data } = await getOrFetch<StockTwitsSentiment>(
+        const { data } = await getOrFetch<RecommendationTrend>(
           supabase,
-          `sentiment:${ticker}`,
+          `rec-trend:${ticker}`,
           "sentiment",
           SENTIMENT_TTL,
-          () => getSentiment(ticker)
+          () => getRecommendationTrend(ticker)
         );
         return data;
       })
     );
 
-    return NextResponse.json(sentiments);
+    return NextResponse.json(trends);
   } catch (err) {
     return NextResponse.json(
       {

@@ -29,7 +29,7 @@ function getProviderConfig(provider: Provider): ProviderConfig {
       },
     },
     gemini: {
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
       apiKey: process.env.GEMINI_API_KEY,
       buildBody: (system, user) => ({
         system_instruction: { parts: [{ text: system }] },

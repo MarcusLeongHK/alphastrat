@@ -21,12 +21,51 @@ interface TickerNews {
   aiSummary: string | null;
 }
 
-interface StockTwitsSentiment {
+interface RecommendationPeriod {
+  period: string;
+  strongBuy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongSell: number;
+}
+
+interface RecommendationTrend {
   ticker: string;
-  bullish: number;
-  bearish: number;
-  messageCount: number;
-  sentiment: "bullish" | "bearish" | "neutral" | null;
+  trend: RecommendationPeriod[];
+}
+
+interface AdanosSentimentData {
+  ticker: string;
+  found: boolean;
+  buzzScore: number;
+  trend: string;
+  mentions: number;
+  sentimentScore: number;
+  bullishPct: number;
+  bearishPct: number;
+  totalUpvotes: number;
+  uniquePosts: number;
+  subredditCount: number;
+  periodDays: number;
+  dailyTrend: { date: string; mentions: number; sentimentScore: number; buzzScore: number }[];
+  topSubreddits: { subreddit: string; mentions: number; sentimentScore: number; buzzScore: number }[];
+}
+
+interface RedditFallback {
+  posts: { title: string; score: number; numComments: number; subreddit: string; permalink: string }[];
+  aiSummary: string | null;
+  postCount: number;
+  totalScore: number;
+  avgScore: number;
+}
+
+interface SocialSentimentData {
+  ticker: string;
+  source: "adanos" | "reddit-rss";
+  adanos: AdanosSentimentData | null;
+  redditFallback: RedditFallback | null;
+  comparison: string | null;
 }
 
 type Tab = "overview" | "news" | "sentiment";
@@ -79,39 +118,48 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-function SentimentBar({
-  bullish,
-  bearish,
-}: {
-  bullish: number;
-  bearish: number;
-}) {
-  const neutral = Math.max(0, 100 - bullish - bearish);
+function periodLabel(period: string): string {
+  if (period === "0m") return "Current";
+  if (period === "-1m") return "1mo ago";
+  if (period === "-2m") return "2mo ago";
+  if (period === "-3m") return "3mo ago";
+  return period;
+}
+
+function RecBar({ data }: { data: RecommendationPeriod }) {
+  const total = data.strongBuy + data.buy + data.hold + data.sell + data.strongSell;
+  if (total === 0) return null;
+  const segments = [
+    { count: data.strongBuy, color: "bg-emerald-600", label: "Strong Buy" },
+    { count: data.buy, color: "bg-emerald-400", label: "Buy" },
+    { count: data.hold, color: "bg-amber-400", label: "Hold" },
+    { count: data.sell, color: "bg-red-400", label: "Sell" },
+    { count: data.strongSell, color: "bg-red-600", label: "Strong Sell" },
+  ];
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex h-3 w-full overflow-hidden rounded-full">
-        {bullish > 0 && (
-          <div
-            className="bg-emerald-500"
-            style={{ width: `${bullish}%` }}
-          />
-        )}
-        {neutral > 0 && (
-          <div
-            className="bg-zinc-300 dark:bg-zinc-600"
-            style={{ width: `${neutral}%` }}
-          />
-        )}
-        {bearish > 0 && (
-          <div
-            className="bg-red-500"
-            style={{ width: `${bearish}%` }}
-          />
-        )}
-      </div>
-      <div className="flex justify-between text-xs">
-        <span className="text-emerald-500">{bullish}% Bullish</span>
-        <span className="text-red-500">{bearish}% Bearish</span>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <span className="w-16 shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">
+          {periodLabel(data.period)}
+        </span>
+        <div className="flex h-4 flex-1 overflow-hidden rounded">
+          {segments.map(
+            (seg) =>
+              seg.count > 0 && (
+                <div
+                  key={seg.label}
+                  className={`${seg.color} flex items-center justify-center text-[9px] font-medium text-white`}
+                  style={{ width: `${(seg.count / total) * 100}%` }}
+                  title={`${seg.label}: ${seg.count}`}
+                >
+                  {seg.count > 0 && total > 3 ? seg.count : ""}
+                </div>
+              ),
+          )}
+        </div>
+        <span className="w-8 shrink-0 text-right text-[10px] text-zinc-400">
+          {total}
+        </span>
       </div>
     </div>
   );
@@ -181,11 +229,21 @@ export function TickerDetailPanel({
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [news, setNews] = useState<TickerNews | null>(null);
   const [newsFetched, setNewsFetched] = useState(false);
-  const [sentiment, setSentiment] = useState<StockTwitsSentiment | null>(null);
+  const [recTrend, setRecTrend] = useState<RecommendationTrend | null>(null);
   const [sentimentFetched, setSentimentFetched] = useState(false);
+  const [socialSentiment, setSocialSentiment] = useState<SocialSentimentData | null>(null);
+  const [socialFetched, setSocialFetched] = useState(false);
+  const [prevTicker, setPrevTicker] = useState(ticker);
+
+  if (ticker !== prevTicker) {
+    setPrevTicker(ticker);
+    setSocialSentiment(null);
+    setSocialFetched(false);
+  }
 
   const newsLoading = !newsFetched;
   const sentimentLoading = !sentimentFetched;
+  const socialLoading = !socialFetched;
 
   useEffect(() => {
     let cancelled = false;
@@ -216,11 +274,11 @@ export function TickerDetailPanel({
     fetch(`/api/market/sentiment?tickers=${ticker}`)
       .then(async (res) => {
         if (!res.ok) return null;
-        return res.json() as Promise<StockTwitsSentiment[]>;
+        return res.json() as Promise<RecommendationTrend[]>;
       })
       .then((data) => {
         if (!cancelled) {
-          setSentiment(data?.[0] ?? null);
+          setRecTrend(data?.[0] ?? null);
           setSentimentFetched(true);
         }
       })
@@ -232,6 +290,31 @@ export function TickerDetailPanel({
       cancelled = true;
     };
   }, [ticker]);
+
+  useEffect(() => {
+    if (activeTab !== "sentiment" || socialFetched) return;
+
+    let cancelled = false;
+
+    fetch(`/api/market/reddit-sentiment?ticker=${ticker}`)
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return res.json() as Promise<SocialSentimentData>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setSocialSentiment(data);
+          setSocialFetched(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSocialFetched(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, activeTab, socialFetched]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
@@ -481,101 +564,226 @@ export function TickerDetailPanel({
 
       {activeTab === "sentiment" && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* StockTwits Sentiment */}
+          {/* Recommendation Trend */}
           <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              StockTwits Sentiment
+              Analyst Recommendation Trend
             </h4>
             {sentimentLoading ? (
-              <div className="h-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-            ) : sentiment && sentiment.sentiment !== null ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-baseline justify-between">
-                  <span
-                    className={`text-lg font-bold ${
-                      sentiment.sentiment === "bullish"
-                        ? "text-emerald-500"
-                        : sentiment.sentiment === "bearish"
-                          ? "text-red-500"
-                          : "text-zinc-500"
-                    }`}
-                  >
-                    {sentiment.sentiment.charAt(0).toUpperCase() +
-                      sentiment.sentiment.slice(1)}
+              <div className="h-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+            ) : recTrend && recTrend.trend.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {recTrend.trend.map((period) => (
+                  <RecBar key={period.period} data={period} />
+                ))}
+                <div className="mt-1 flex flex-wrap gap-2 text-[9px]">
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-sm bg-emerald-600" /> Strong Buy
                   </span>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {sentiment.messageCount} messages
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-sm bg-emerald-400" /> Buy
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-sm bg-amber-400" /> Hold
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-sm bg-red-400" /> Sell
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-sm bg-red-600" /> Strong Sell
                   </span>
                 </div>
-                <SentimentBar
-                  bullish={sentiment.bullish}
-                  bearish={sentiment.bearish}
-                />
               </div>
             ) : (
               <p className="text-xs text-zinc-400">
-                No sentiment data available
+                No recommendation trend data available
               </p>
             )}
           </div>
 
-          {/* Analyst vs Sentiment comparison */}
+          {/* Sentiment Summary */}
           <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Analyst vs Retail
+              Sentiment Summary
             </h4>
-            {analyst?.recommendationKey && sentiment?.sentiment ? (
+            {analyst?.recommendationKey ? (
               <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                      Wall Street
-                    </div>
-                    <div
-                      className={`text-sm font-bold ${ratingColor(analyst.recommendationKey)}`}
-                    >
-                      {formatRating(analyst.recommendationKey)}
-                    </div>
-                    <div className="text-[10px] text-zinc-400">
-                      {analyst.numberOfAnalysts} analysts
-                    </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    Wall Street Consensus
                   </div>
-                  <div className="text-center">
-                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                      Retail / Social
-                    </div>
-                    <div
-                      className={`text-sm font-bold ${
-                        sentiment.sentiment === "bullish"
-                          ? "text-emerald-500"
-                          : sentiment.sentiment === "bearish"
-                            ? "text-red-500"
-                            : "text-zinc-500"
-                      }`}
-                    >
-                      {sentiment.sentiment.charAt(0).toUpperCase() +
-                        sentiment.sentiment.slice(1)}
-                    </div>
-                    <div className="text-[10px] text-zinc-400">
-                      {sentiment.messageCount} posts
-                    </div>
+                  <div
+                    className={`text-lg font-bold ${ratingColor(analyst.recommendationKey)}`}
+                  >
+                    {formatRating(analyst.recommendationKey)}
+                  </div>
+                  <div className="text-[10px] text-zinc-400">
+                    {analyst.numberOfAnalysts} analysts
                   </div>
                 </div>
-                {analyst.recommendationKey !== sentiment.sentiment &&
-                  !(
-                    (analyst.recommendationKey === "strong_buy" ||
-                      analyst.recommendationKey === "buy") &&
-                    sentiment.sentiment === "bullish"
-                  ) && (
-                    <div className="rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-                      Analyst and retail sentiment diverge — worth
-                      investigating further.
+                {recTrend && recTrend.trend.length >= 2 && (() => {
+                  const current = recTrend.trend.find((t) => t.period === "0m");
+                  const prev = recTrend.trend.find((t) => t.period === "-1m");
+                  if (!current || !prev) return null;
+                  const curBull = current.strongBuy + current.buy;
+                  const prevBull = prev.strongBuy + prev.buy;
+                  const curBear = current.sell + current.strongSell;
+                  const prevBear = prev.sell + prev.strongSell;
+                  const bullDiff = curBull - prevBull;
+                  const bearDiff = curBear - prevBear;
+                  if (bullDiff === 0 && bearDiff === 0) return null;
+                  return (
+                    <div className="rounded bg-zinc-100 px-2 py-1.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                      {bullDiff > 0
+                        ? `+${bullDiff} analyst${bullDiff > 1 ? "s" : ""} moved to Buy/Strong Buy this month`
+                        : bullDiff < 0
+                          ? `${bullDiff} analyst${bullDiff < -1 ? "s" : ""} downgraded from Buy this month`
+                          : null}
+                      {bullDiff !== 0 && bearDiff !== 0 ? ". " : ""}
+                      {bearDiff > 0
+                        ? `+${bearDiff} new Sell rating${bearDiff > 1 ? "s" : ""} this month`
+                        : bearDiff < 0
+                          ? `${Math.abs(bearDiff)} Sell rating${Math.abs(bearDiff) > 1 ? "s" : ""} removed this month`
+                          : null}
                     </div>
-                  )}
+                  );
+                })()}
+                {socialLoading ? (
+                  <div className="h-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                ) : socialSentiment?.adanos ? (
+                  <>
+                    <div className="rounded border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-900/50 dark:bg-blue-950/20">
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                          Social Sentiment
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                          <span>{socialSentiment.adanos.mentions} mentions</span>
+                          <span className="text-zinc-300 dark:text-zinc-600">|</span>
+                          <span>{socialSentiment.adanos.uniquePosts} posts</span>
+                          <span className="text-zinc-300 dark:text-zinc-600">|</span>
+                          <span>{socialSentiment.adanos.periodDays}d</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center">
+                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Buzz</div>
+                          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                            {socialSentiment.adanos.buzzScore.toFixed(1)}
+                          </div>
+                          <div className={`text-[10px] font-medium ${
+                            socialSentiment.adanos.trend === "up" ? "text-emerald-500"
+                              : socialSentiment.adanos.trend === "down" ? "text-red-500"
+                              : "text-zinc-400"
+                          }`}>
+                            {socialSentiment.adanos.trend === "up" ? "Trending up"
+                              : socialSentiment.adanos.trend === "down" ? "Trending down"
+                              : "Stable"}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Sentiment</div>
+                          <div className={`text-lg font-bold tabular-nums ${
+                            socialSentiment.adanos.sentimentScore > 0.6 ? "text-emerald-500"
+                              : socialSentiment.adanos.sentimentScore < 0.4 ? "text-red-500"
+                              : "text-amber-500"
+                          }`}>
+                            {(socialSentiment.adanos.sentimentScore * 100).toFixed(0)}%
+                          </div>
+                          <div className="text-[10px] text-zinc-400">
+                            {socialSentiment.adanos.sentimentScore > 0.6 ? "Bullish"
+                              : socialSentiment.adanos.sentimentScore < 0.4 ? "Bearish"
+                              : "Neutral"}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Upvotes</div>
+                          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                            {socialSentiment.adanos.totalUpvotes >= 1000
+                              ? `${(socialSentiment.adanos.totalUpvotes / 1000).toFixed(1)}k`
+                              : socialSentiment.adanos.totalUpvotes}
+                          </div>
+                          <div className="text-[10px] text-zinc-400">engagement</div>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <div className="mb-1 text-[10px] text-zinc-400 dark:text-zinc-500">
+                          Bullish / Bearish Split
+                        </div>
+                        <div className="flex h-3 overflow-hidden rounded-full">
+                          <div
+                            className="bg-emerald-500 transition-all"
+                            style={{ width: `${socialSentiment.adanos.bullishPct}%` }}
+                          />
+                          <div
+                            className="bg-red-500 transition-all"
+                            style={{ width: `${socialSentiment.adanos.bearishPct}%` }}
+                          />
+                        </div>
+                        <div className="mt-0.5 flex justify-between text-[10px]">
+                          <span className="text-emerald-500">{socialSentiment.adanos.bullishPct.toFixed(0)}% Bullish</span>
+                          <span className="text-red-500">{socialSentiment.adanos.bearishPct.toFixed(0)}% Bearish</span>
+                        </div>
+                      </div>
+                      {socialSentiment.adanos.topSubreddits.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {socialSentiment.adanos.topSubreddits.slice(0, 5).map((sub) => (
+                            <span
+                              key={sub.subreddit}
+                              className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                            >
+                              r/{sub.subreddit} ({sub.mentions})
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {socialSentiment.comparison && (
+                      <div className="rounded border border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-900/50 dark:bg-violet-950/20">
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                          Retail vs Institutional
+                        </div>
+                        <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+                          {socialSentiment.comparison}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : socialSentiment?.redditFallback && socialSentiment.redditFallback.postCount > 0 ? (
+                  <>
+                    <div className="rounded border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-900/50 dark:bg-orange-950/20">
+                      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                        Reddit Retail Sentiment
+                        <span className="font-normal normal-case text-zinc-400">
+                          ({socialSentiment.redditFallback.postCount} posts)
+                        </span>
+                      </div>
+                      {socialSentiment.redditFallback.aiSummary && (
+                        <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+                          {socialSentiment.redditFallback.aiSummary}
+                        </p>
+                      )}
+                    </div>
+                    {socialSentiment.comparison && (
+                      <div className="rounded border border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-900/50 dark:bg-violet-950/20">
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                          Retail vs Institutional
+                        </div>
+                        <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+                          {socialSentiment.comparison}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded bg-zinc-100 px-2 py-1.5 text-xs text-zinc-400 dark:bg-zinc-800">
+                    No social sentiment data available
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-xs text-zinc-400">
-                Need both analyst and sentiment data for comparison
+                No analyst data available
               </p>
             )}
           </div>

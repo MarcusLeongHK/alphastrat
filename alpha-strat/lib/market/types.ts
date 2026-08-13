@@ -56,8 +56,22 @@ export interface TickerNews {
 
 export interface StockTwitsSentiment {
   ticker: string;
-  bullish: number; // percentage 0-100
-  bearish: number; // percentage 0-100
+  bullish: number;
+  bearish: number;
   messageCount: number;
   sentiment: "bullish" | "bearish" | "neutral" | null;
+}
+
+export interface RecommendationPeriod {
+  period: string; // "0m" = current, "-1m" = last month, etc.
+  strongBuy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongSell: number;
+}
+
+export interface RecommendationTrend {
+  ticker: string;
+  trend: RecommendationPeriod[];
 }

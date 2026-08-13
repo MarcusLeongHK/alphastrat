@@ -1,4 +1,4 @@
-import { QuoteData, HistoricalBar, EarningsData, AnalystData, NewsArticle } from "./types";
+import { QuoteData, HistoricalBar, EarningsData, AnalystData, NewsArticle, RecommendationTrend, RecommendationPeriod } from "./types";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -195,6 +195,15 @@ interface YahooFinancialData {
   targetLowPrice?: YahooRawValue;
 }
 
+interface YahooRecommendationTrendEntry {
+  period?: string;
+  strongBuy?: number;
+  buy?: number;
+  hold?: number;
+  sell?: number;
+  strongSell?: number;
+}
+
 interface YahooQuoteSummaryResult {
   calendarEvents?: {
     earnings?: YahooEarningsCalendar;
@@ -202,6 +211,9 @@ interface YahooQuoteSummaryResult {
   financialData?: YahooFinancialData;
   summaryDetail?: {
     marketCap?: YahooRawValue;
+  };
+  recommendationTrend?: {
+    trend?: YahooRecommendationTrendEntry[];
   };
 }
 
@@ -414,6 +426,47 @@ export async function getAnalystData(ticker: string): Promise<AnalystData> {
       targetHighPrice: financialData.targetHighPrice?.raw ?? null,
       targetLowPrice: financialData.targetLowPrice?.raw ?? null,
     };
+  } catch {
+    return empty;
+  }
+}
+
+export async function getRecommendationTrend(ticker: string): Promise<RecommendationTrend> {
+  const empty: RecommendationTrend = { ticker, trend: [] };
+
+  try {
+    const auth = await getYahooCrumb();
+    if (!auth) return empty;
+
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(
+      ticker,
+    )}?modules=recommendationTrend&crumb=${encodeURIComponent(auth.crumb)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Cookie: auth.cookie,
+      },
+    });
+
+    if (!response.ok) return empty;
+
+    const json = (await response.json()) as YahooQuoteSummaryResponse;
+    if (json.quoteSummary.error) return empty;
+
+    const result = json.quoteSummary.result?.[0];
+    const entries = result?.recommendationTrend?.trend ?? [];
+
+    const trend: RecommendationPeriod[] = entries.map((e) => ({
+      period: e.period ?? "0m",
+      strongBuy: e.strongBuy ?? 0,
+      buy: e.buy ?? 0,
+      hold: e.hold ?? 0,
+      sell: e.sell ?? 0,
+      strongSell: e.strongSell ?? 0,
+    }));
+
+    return { ticker, trend };
   } catch {
     return empty;
   }

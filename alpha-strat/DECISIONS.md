@@ -675,4 +675,72 @@ Every significant architecture and implementation decision, with the options con
 
 **Reasoning:** Google deprecates Gemini models frequently — pinning to a specific version means the app breaks silently when that version is removed (as happened with `gemini-2.0-flash`). The rolling alias ensures we're always on the latest Flash model without code changes. The tradeoff is that output quality/format could change between model versions, but for news summarization the risk is low. Groq (Llama 3.3 70B) remains the default for portfolio summaries where we've tuned the prompt.
 
+## Decision 38: Reddit Sentiment — RSS Multi-Subreddit Search vs. JSON API vs. OAuth
+
+**Date:** Phase 5 (2026-08-13)
+
+**Context:** The original plan called for Reddit OAuth via PRAW (Python) or direct JSON API. Both approaches failed: Reddit's JSON endpoints (`reddit.com/r/…/.json`) return HTML instead of JSON for server-side requests, and the app registration flow at `reddit.com/prefs/apps` now redirects to Devvit (Reddit's platform for Reddit-native apps, not for external API consumers). StockTwits API returns 403 behind Cloudflare bot protection.
+
+**Options considered:**
+1. **Reddit OAuth API** — proper API access via client_id + secret
+2. **Reddit JSON endpoints** — unauthenticated `.json` suffix on any Reddit URL
+3. **Reddit RSS feeds** — Atom XML from `.rss` suffix on search/subreddit URLs
+4. **PRAW (Python)** — official Reddit Python library
+5. **Third-party archives** (Pullpush, Arctic Shift) — historical Reddit data APIs
+6. **Twitter/X API** — social sentiment from tweets
+
+**Pros/cons:**
+
+| Option | Pros | Cons |
+|--------|------|------|
+| Reddit OAuth | Full API access, reliable | Registration flow broken (redirects to Devvit); requires form submission for API key access |
+| Reddit JSON | No auth needed; same data as API | Returns HTML, not JSON, for server-side requests — blocked by bot detection |
+| Reddit RSS | No auth needed; returns real data; single HTTP request | No upvote scores (always 0); limited to ~25 results; Atom XML requires parsing |
+| PRAW | Well-maintained; handles OAuth automatically | Requires Python runtime (violates Decision 14); still needs API credentials we can't obtain |
+| Third-party archives | Historical data; no rate limits | Services are down/timing out (Pullpush, Arctic Shift) as of Aug 2026 |
+| Twitter/X API | Largest social platform | $100/month minimum; Nitter proxies blocked by Cloudflare |
+
+**Decision:** Reddit RSS feeds with multi-subreddit search path
+
+**Implementation details:**
+- URL pattern: `https://www.reddit.com/r/wallstreetbets+stocks+investing+options+stockmarket/search.rss?q=TICKER&sort=hot&t=week&restrict_sr=on&limit=25`
+- The `+` syntax searches across 5 finance subreddits in a single HTTP request (no rate limit risk from multiple calls)
+- `sort=hot` returns currently trending discussions (better for real-time sentiment than `relevance`)
+- `restrict_sr=on` ensures results come only from the specified subreddits (avoids false positives like r/Blind where NVDA is a screen reader)
+- Subreddit extracted from each post's permalink via regex (not hardcoded) since results span multiple subs
+- `rss-parser` npm package handles Atom XML parsing robustly
+- Results cached for 8 hours via `getOrFetch` to minimize Reddit requests (1 API call per ticker per 8 hours)
+- Fetch is lazy — only triggered when user clicks the Sentiment tab, not on component mount
+
+**Reasoning:** RSS is the only Reddit access method that works reliably from server-side Node.js without authentication. The tradeoff is losing upvote scores (RSS returns 0 for all posts), but the post titles and content are sufficient for AI sentiment analysis. The multi-subreddit `+` path was chosen over Reddit-wide search because unrestricted search returns irrelevant results (e.g., NVDA matching the screen reader subreddit). Five finance-focused subreddits provide broad retail sentiment coverage while keeping results relevant.
+
+---
+
+## Decision 39: Reddit Sentiment AI — Groq vs. Gemini
+
+**Date:** Phase 5 (2026-08-13)
+
+**Options considered:**
+1. **Groq (Llama 3.3 70B)** — fast inference (~200ms), good at short analytical text
+2. **Gemini Flash** — good reasoning, rolling alias avoids deprecation
+
+**Decision:** Groq for Reddit sentiment analysis AND retail-vs-institutional comparison
+
+**Reasoning:** Both the Reddit sentiment summary and the retail-vs-institutional comparison are short-form analytical text (2-4 sentences each). Groq's ~200ms inference on Llama 3.3 70B is ideal for this — fast enough that the Sentiment tab feels responsive even with two sequential AI calls. Gemini is reserved for longer-form analysis (thesis generation in Phase 6) where deeper reasoning justifies the slower response. The dual-AI architecture from Decision 30 pays off here: task-matched model selection keeps the UX snappy for lightweight analysis while preserving capacity for heavyweight tasks.
+
+---
+
+## Decision 40: Retail vs. Institutional Comparison — AI-Generated vs. Rule-Based
+
+**Date:** Phase 5 (2026-08-13)
+
+**Options considered:**
+1. **AI-generated comparison** — Groq analyzes both signals and writes a natural-language comparison
+2. **Rule-based** — programmatic logic (if analyst=buy AND reddit=bearish → "Divergence detected")
+3. **Side-by-side display only** — show both without explicit comparison
+
+**Decision:** AI-generated comparison via Groq
+
+**Reasoning:** The value of comparing retail vs. institutional sentiment is in the nuance — not just "they agree" or "they disagree" but *why* and *what it means*. A rule-based system would need to categorize Reddit sentiment into buckets (bullish/bearish/neutral), losing the subtlety of mixed signals. The AI reads the analyst consensus rating, analyst count, and the full Reddit sentiment summary, then writes 2-3 sentences identifying congruence or divergence with context. This produces insights like "both groups are bullish but retail is more speculative, focused on short-term price targets while analysts cite fundamentals." Cost is negligible — one additional Groq call per ticker per 8 hours (cached).
+
 *This log will be updated as new decisions are made in Phases 6-7.*

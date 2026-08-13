@@ -50,10 +50,14 @@
 - `app/watchlist/actions.ts` — watchlist server actions
 - `lib/ai/client.ts` — dual-provider AI client (Groq for summaries, Gemini for thesis)
 - `lib/ai/prompts.ts` — system prompts and prompt builders
-- `lib/market/stocktwits.ts` — StockTwits sentiment client
+- `lib/market/stocktwits.ts` — StockTwits sentiment client (blocked by Cloudflare as of Aug 2026)
+- `lib/market/reddit.ts` — Reddit RSS sentiment fetcher (multi-subreddit search, rss-parser)
 - `lib/ai/news-summary.ts` — AI news summarization
+- `lib/ai/reddit-sentiment.ts` — Groq-powered Reddit sentiment analysis
+- `lib/ai/sentiment-comparison.ts` — Groq-powered retail vs institutional comparison
 - `app/api/market/news/route.ts` — news + AI summary per ticker
-- `app/api/market/sentiment/route.ts` — StockTwits sentiment data
+- `app/api/market/sentiment/route.ts` — analyst recommendation trend data
+- `app/api/market/reddit-sentiment/route.ts` — Reddit sentiment + AI analysis + comparison
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)
