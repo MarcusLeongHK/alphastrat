@@ -9,6 +9,7 @@ import { PositionsTable } from "./positions-table";
 import { AllocationChart } from "./allocation-chart";
 import { RiskMetricsCard } from "./risk-metrics-card";
 import { PerformanceChart } from "./performance-chart";
+import { AiSummaryCard } from "./ai-summary-card";
 
 interface RiskMetrics {
   beta: number;
@@ -21,6 +22,10 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
 
   const [metrics, setMetrics] = useState<RiskMetrics | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
+
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
 
   const tickers = useMemo(
@@ -130,6 +135,51 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
   }, [enrichedPositions]);
 
 
+  useEffect(() => {
+    if (!enrichedPositions || enrichedPositions.length === 0 || !metrics) return;
+
+    let cancelled = false;
+    setAiLoading(true);
+
+    fetch("/api/analysis/ai-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        positions: enrichedPositions.map((p, i) => ({
+          ...p,
+          weight: weights[i]?.weight ?? 0,
+        })),
+        metrics: { ...metrics, cagr: 0 },
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? "Failed to generate AI summary");
+        }
+        return res.json() as Promise<{ summary: string }>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setAiSummary(data.summary);
+          setAiLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setAiError(
+            err instanceof Error ? err.message : "Failed to generate AI summary"
+          );
+          setAiLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enrichedPositions, metrics]);
+
   if (positions.length === 0) {
     return (
       <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -164,6 +214,8 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
       <div>
         <PositionsTable positions={positions} quotes={quotes} />
       </div>
+
+      <AiSummaryCard summary={aiSummary} loading={aiLoading} error={aiError} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">

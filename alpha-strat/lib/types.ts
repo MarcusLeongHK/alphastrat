@@ -9,6 +9,7 @@ export interface Position {
 }
 
 export interface PositionInsert {
+  user_id: string;
   ticker: string;
   quantity: number;
   cost_basis: number;

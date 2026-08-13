@@ -14,6 +14,16 @@ export async function addPosition(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "You must be logged in." };
+  }
+
   const ticker = formData.get("ticker") as string | null;
   const quantity = formData.get("quantity") as string | null;
   const costBasis = formData.get("cost_basis") as string | null;
@@ -45,12 +55,11 @@ export async function addPosition(
     return { error: "Invalid ticker symbol." };
   }
 
-  const supabase = await createClient();
-
   const { data: existing, error: lookupError } = await supabase
     .from("positions")
     .select("id")
     .eq("ticker", normalizedTicker)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   if (lookupError) {
@@ -64,6 +73,7 @@ export async function addPosition(
   }
 
   const position: PositionInsert = {
+    user_id: user.id,
     ticker: normalizedTicker,
     quantity: parsedQuantity,
     cost_basis: parsedCostBasis,
@@ -80,6 +90,7 @@ export async function addPosition(
   }
 
   await supabase.from("transactions").insert({
+    user_id: user.id,
     position_id: inserted.id,
     ticker: normalizedTicker,
     type: "buy",
@@ -96,6 +107,16 @@ export async function addTransaction(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "You must be logged in." };
+  }
+
   const id = formData.get("id") as string | null;
   const type = (formData.get("type") as string | null) ?? "buy";
   const quantity = formData.get("quantity") as string | null;
@@ -142,8 +163,6 @@ export async function addTransaction(
     }
   }
 
-  const supabase = await createClient();
-
   const { data: existing, error: fetchError } = await supabase
     .from("positions")
     .select("ticker, quantity, cost_basis")
@@ -175,6 +194,7 @@ export async function addTransaction(
     }
 
     await supabase.from("transactions").insert({
+      user_id: user.id,
       position_id: id,
       ticker,
       type: "sell",
@@ -202,6 +222,7 @@ export async function addTransaction(
   }
 
   await supabase.from("transactions").insert({
+    user_id: user.id,
     position_id: id,
     ticker,
     type: "buy",
@@ -218,12 +239,21 @@ export async function deletePosition(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "You must be logged in." };
+  }
+
   const id = formData.get("id") as string | null;
   if (!id) {
     return { error: "Position ID is required." };
   }
 
-  const supabase = await createClient();
   const { error } = await supabase.from("positions").delete().eq("id", id);
 
   if (error) {

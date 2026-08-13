@@ -46,6 +46,12 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createClient();
+    const { data: claimsData, error: authError } =
+      await supabase.auth.getClaims();
+
+    if (authError || !claimsData?.claims?.sub) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     async function fetchBars(ticker: string): Promise<HistoricalBar[]> {
       const { data } = await getOrFetch<HistoricalBar[]>(

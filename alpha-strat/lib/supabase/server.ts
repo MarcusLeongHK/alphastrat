@@ -12,9 +12,14 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
-          for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+        setAll(cookiesToSet, _headers) {
+          try {
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set(name, value, options);
+            }
+          } catch {
+            // setAll called from a Server Component — the proxy handles
+            // writing cookies and cache-control headers on every request.
           }
         },
       },

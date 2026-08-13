@@ -67,6 +67,12 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createClient();
+    const { data: claimsData, error: authError } =
+      await supabase.auth.getClaims();
+
+    if (authError || !claimsData?.claims?.sub) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { data: earliestRow } = await supabase
       .from("transactions")

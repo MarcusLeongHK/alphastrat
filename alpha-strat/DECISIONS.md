@@ -498,4 +498,81 @@ Every significant architecture and implementation decision, with the options con
 
 ---
 
-*This log will be updated as new decisions are made in Phases 2-7.*
+## Decision 27: Auth Strategy — Proxy Redirect vs authInterrupts
+
+**Date:** Phase 2
+
+**Options considered:**
+1. **Proxy redirect to /login** — standard pattern, redirect unauthenticated users from protected routes
+2. **authInterrupts (experimental)** — Next.js 16.3 feature enabling `unauthorized()` / `forbidden()` calls that render dedicated 401/403 pages with correct HTTP status codes
+
+**Decision:** Proxy redirect
+
+**Reasoning:** `authInterrupts` is still marked experimental in Next.js 16.3. For a hobby project, the stable redirect pattern is simpler and well-documented. The proxy redirects unauthenticated users to `/login` for page routes and returns JSON `{ error: "Unauthorized" }` with 401 status for API routes. If `authInterrupts` graduates to stable, it could be adopted later for a cleaner separation of auth errors (401 vs 403).
+
+---
+
+## Decision 28: JWT Verification Strategy — getClaims() vs getUser()
+
+**Date:** Phase 2
+
+**Context:** Supabase offers three methods to verify auth: `getSession()` (unsafe, reads cookie without verification), `getClaims()` (verifies JWT signature locally using JWKS), `getUser()` (round-trip to Supabase auth server).
+
+**Decision:** Use `getUser()` for mutations and page-level auth; use `getClaims()` for API route read protection.
+
+**Reasoning:** Server Actions that modify data (addPosition, addTransaction, deletePosition) warrant the strongest verification — `getUser()` confirms the session is still valid on the auth server, catching revoked sessions. API routes called frequently from client components (quotes, chart data, risk metrics) use `getClaims()` which verifies the JWT locally without a network round-trip. This is faster and reduces load on Supabase's free tier. The proxy uses `getUser()` because it runs once per navigation and also triggers token refresh.
+
+---
+
+## Decision 29: Dev Data Migration — Assign to First User vs Delete
+
+**Date:** Phase 2
+
+**Options considered:**
+1. **Assign all NULL user_id rows to the first registered user** — preserve Phase 1 test data
+2. **Delete all NULL user_id rows** — clean slate
+3. **Leave NULL rows** — they become invisible under RLS anyway
+
+**Decision:** Assign to first user via manual SQL after signup
+
+**Reasoning:** Marcus entered real positions and transactions during Phase 1 development. Deleting them would require re-entering everything. Leaving NULL rows makes them invisible but wastes storage. Assigning them to the first user (via `UPDATE positions SET user_id = (SELECT id FROM auth.users LIMIT 1) WHERE user_id IS NULL`) preserves all data and is a one-time operation run from the Supabase SQL editor after the first signup. The commented-out SQL is in `003_auth_rls.sql` for reference.
+
+---
+
+## Decision 30: AI Provider — Groq + Gemini vs Single Provider
+
+**Date:** Phase 2
+
+**Options considered:**
+1. **Groq only** (Llama 3.3 70B) — fast, OpenAI-compatible API, generous free tier (30 RPM)
+2. **Gemini only** (Gemini 2.0 Flash) — good reasoning, 15 RPM / 1M tokens/day free
+3. **Dual provider: Groq for short tasks, Gemini for long tasks** — task-matched selection
+4. **Anthropic SDK** (original implementation) — `@anthropic-ai/sdk` was imported but never installed
+
+**Decision:** Dual provider with Groq as default
+
+**Reasoning:** Different AI tasks have different latency/quality profiles. Portfolio summaries (2-3 sentences) need speed over depth — Groq's ~200ms inference on Llama 3.3 70B is ideal and the 30 RPM free tier is generous. Thesis generation (Phase 6) needs stronger analytical reasoning over longer output — Gemini 2.0 Flash is better suited with its 1M tokens/day free tier. Using direct `fetch()` to REST APIs avoids adding SDK dependencies, consistent with the project's "no heavy libraries" pattern. The provider abstraction in `lib/ai/client.ts` makes switching trivial — `generateCompletion(system, user, "gemini")`.
+
+---
+
+## Decision 31: RLS Policy Fix — Permissive Dev Policies to Per-User Isolation
+
+**Date:** Phase 2
+
+**Context:** Both accounts saw the same portfolio data because of three compounding issues.
+
+**Root causes fixed:**
+1. **RLS policies** used `qual = true` (the `dev_*` policies from Phase 1) — every authenticated user could read/write all rows
+2. **Server actions** never set `user_id` on inserts — all new data had NULL user_id
+3. **All existing data** had `user_id = NULL` — no ownership assigned
+
+**Fix applied:**
+- Dropped all 6 permissive dev policies, created 8 proper policies with `auth.uid() = user_id` (SELECT/INSERT/UPDATE/DELETE on both positions and transactions)
+- Added `user_id = user.id` to all insert operations in `addPosition` and `addTransaction`
+- Added `user_id` to duplicate-ticker check (`.eq("user_id", user.id)`) so different users can hold the same ticker
+- Assigned NULL rows to primary account, enforced `NOT NULL` on `user_id` for both tables
+- Added `user_id` to `PositionInsert` type
+
+---
+
+*This log will be updated as new decisions are made in Phases 3-7.*

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Position } from "@/lib/types";
 import { AddPositionForm } from "./add-position-form";
@@ -5,6 +6,13 @@ import { PortfolioDashboard } from "./portfolio-dashboard";
 
 export default async function PortfolioPage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
 
   const { data: positions } = await supabase
     .from("positions")

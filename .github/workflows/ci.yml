@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key-for-ci-build
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: alpha-strat/package-lock.json
+
+      - name: Install dependencies
+        working-directory: alpha-strat
+        run: npm ci
+
+      - name: Run linter
+        working-directory: alpha-strat
+        run: npm run lint
+
+      - name: Run type check
+        working-directory: alpha-strat
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        working-directory: alpha-strat
+        run: npx vitest run
+
+      - name: Build
+        working-directory: alpha-strat
+        run: npm run build
