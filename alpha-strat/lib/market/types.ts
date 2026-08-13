@@ -39,3 +39,25 @@ export interface AnalystData {
   targetHighPrice: number | null;
   targetLowPrice: number | null;
 }
+
+export interface NewsArticle {
+  title: string;
+  publisher: string;
+  link: string;
+  publishedAt: string; // ISO date
+  summary?: string;
+}
+
+export interface TickerNews {
+  ticker: string;
+  articles: NewsArticle[];
+  aiSummary: string | null;
+}
+
+export interface StockTwitsSentiment {
+  ticker: string;
+  bullish: number; // percentage 0-100
+  bearish: number; // percentage 0-100
+  messageCount: number;
+  sentiment: "bullish" | "bearish" | "neutral" | null;
+}

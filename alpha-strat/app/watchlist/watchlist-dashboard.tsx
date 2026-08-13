@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
 import type { WatchlistItem } from "@/lib/types";
 import type { QuoteData, EarningsData, AnalystData } from "@/lib/market/types";
 import { removeFromWatchlist, type ActionResult } from "./actions";
+import { TickerDetailPanel } from "./ticker-detail-panel";
 
 const initialState: ActionResult = {};
 
@@ -272,6 +273,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
 
   const tickers = useMemo(
     () => Array.from(new Set(items.map((i) => i.ticker))),
@@ -517,14 +519,31 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                   const upcoming =
                     earning?.earningsDate &&
                     isWithinDays(earning.earningsDate, 7);
+                  const isExpanded = expandedTicker === item.ticker;
 
                   return (
+                    <React.Fragment key={item.id}>
                     <tr
-                      key={item.id}
-                      className="border-b border-zinc-100 dark:border-zinc-800/50"
+                      className={`border-b border-zinc-100 dark:border-zinc-800/50 cursor-pointer transition-colors ${
+                        isExpanded
+                          ? "bg-zinc-50 dark:bg-zinc-900/30"
+                          : "hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20"
+                      }`}
+                      onClick={() =>
+                        setExpandedTicker(isExpanded ? null : item.ticker)
+                      }
                     >
                       <td className="py-3 pr-4 font-mono font-medium text-zinc-900 dark:text-zinc-100">
-                        {item.ticker}
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className={`inline-block text-[10px] transition-transform ${
+                              isExpanded ? "rotate-90" : ""
+                            }`}
+                          >
+                            ▶
+                          </span>
+                          {item.ticker}
+                        </span>
                       </td>
                       <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                         {quote ? `$${quote.price.toFixed(2)}` : "—"}
@@ -579,10 +598,26 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                           </span>
                         ) : "—"}
                       </td>
-                      <td className="py-3 text-right">
+                      <td
+                        className="py-3 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <DeleteButton id={item.id} />
                       </td>
                     </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={8} className="p-0">
+                          <TickerDetailPanel
+                            ticker={item.ticker}
+                            quote={quote}
+                            earning={earning}
+                            analyst={analyst}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
           </tbody>

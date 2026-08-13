@@ -50,6 +50,10 @@
 - `app/watchlist/actions.ts` — watchlist server actions
 - `lib/ai/client.ts` — dual-provider AI client (Groq for summaries, Gemini for thesis)
 - `lib/ai/prompts.ts` — system prompts and prompt builders
+- `lib/market/stocktwits.ts` — StockTwits sentiment client
+- `lib/ai/news-summary.ts` — AI news summarization
+- `app/api/market/news/route.ts` — news + AI summary per ticker
+- `app/api/market/sentiment/route.ts` — StockTwits sentiment data
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)

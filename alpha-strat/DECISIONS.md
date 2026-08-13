@@ -613,4 +613,66 @@ Every significant architecture and implementation decision, with the options con
 
 ---
 
-*This log will be updated as new decisions are made in Phases 5-7.*
+## Decision 34: Expandable Row Detail vs. Slide-Out Panel vs. Separate Page
+
+**Date:** Phase 5
+
+**Options considered:**
+1. **Expandable row** — click a watchlist row to reveal a detail panel inline below it
+2. **Slide-out drawer** — click to open a side panel with details
+3. **Separate page** — `/watchlist/AAPL` with full-page detail view
+4. **Modal/dialog** — overlay with stock details
+
+**Decision:** Expandable row with `React.Fragment` wrapping each table row + detail row
+
+**Reasoning:** The user explicitly requested "more information shown when I click on it in the watchlist." An expandable row keeps context — you see the detail panel right below the ticker you clicked, with the rest of the watchlist still visible for comparison. A separate page loses context; a modal blocks the background; a drawer works but feels like a different app paradigm. The `React.Fragment` pattern lets us render two `<tr>` elements (data row + detail row) per item without breaking table semantics. The arrow indicator (▶) rotates 90° when expanded for visual feedback.
+
+---
+
+## Decision 35: News Display — Cited AI Summary vs. Article List
+
+**Date:** Phase 5
+
+**Options considered:**
+1. **Article list** — show individual headlines with publisher and timestamp
+2. **AI summary + article list** — summary at top, full list below
+3. **Cited AI summary** — AI writes a cohesive summary with inline `[1]`, `[2]` citations linking to source articles
+
+**Decision:** Cited AI summary with numbered source references
+
+**Reasoning:** A raw article list requires the user to scan 8+ headlines to understand what's happening. A plain AI summary loses source attribution. The cited format gives the best of both: a readable 2-4 sentence narrative with inline bracket citations (`[1]`, `[2]`) that link directly to the original articles. Below the summary, a compact "Sources" section lists all articles by number for reference. The AI prompt instructs Gemini to use `[N]` notation matching article numbers, and the frontend parses these with a regex split to render them as clickable links. This is the same citation pattern used by research tools like Perplexity.
+
+---
+
+## Decision 36: Sentiment Data Sources — StockTwits + Analyst Comparison
+
+**Date:** Phase 5
+
+**Options considered:**
+1. **Reddit (r/wallstreetbets, r/stocks)** — largest retail investor community
+2. **StockTwits** — dedicated stock social network, public API
+3. **Twitter/X** — broad sentiment, requires paid API
+4. **Multiple sources aggregated** — combine Reddit + StockTwits
+
+**Decision:** StockTwits as primary retail sentiment, with analyst vs. retail comparison
+
+**Reasoning:** StockTwits has a public, free API that returns per-ticker sentiment (bullish/bearish message counts) without authentication. Reddit's API requires OAuth app registration (additional setup burden). Twitter's API is paid. StockTwits data maps directly to what we need: "are retail investors bullish or bearish on this ticker?" The analyst vs. retail comparison panel highlights divergences — when Wall Street says "Strong Buy" but retail is bearish (or vice versa), that's a signal worth surfacing. StockTwits may be rate-limited in some environments — the client fails soft to null values so the UI gracefully shows "No sentiment data available."
+
+---
+
+## Decision 37: Gemini Model — Latest Rolling Alias vs. Pinned Version
+
+**Date:** Phase 5
+
+**Context:** The original `gemini-2.0-flash` model was deprecated by Google, breaking AI news summaries.
+
+**Options considered:**
+1. **Pin to a specific model** (e.g., `gemini-3.6-flash`) — stable but requires manual updates
+2. **Use rolling alias** (`gemini-flash-latest`) — always resolves to newest Flash model
+3. **Switch to a different provider** — use Groq for everything
+
+**Decision:** Rolling alias `gemini-flash-latest`
+
+**Reasoning:** Google deprecates Gemini models frequently — pinning to a specific version means the app breaks silently when that version is removed (as happened with `gemini-2.0-flash`). The rolling alias ensures we're always on the latest Flash model without code changes. The tradeoff is that output quality/format could change between model versions, but for news summarization the risk is low. Groq (Llama 3.3 70B) remains the default for portfolio summaries where we've tuned the prompt.
+
+*This log will be updated as new decisions are made in Phases 6-7.*

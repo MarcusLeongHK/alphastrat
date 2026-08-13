@@ -8,14 +8,14 @@ Built as a single Next.js deployment with zero recurring cost as the overriding 
 
 ## Current Status
 
-**Active phase: Phase 3 — Watchlist & Earnings Calendar**
+**Active phase: Phase 5 — Sentiment & Analyst Analysis**
 
 | Phase | Status |
 |-------|--------|
 | 1. Portfolio Analyzer UI | ✅ Complete |
 | 2. Authentication & Authorization | ✅ Complete |
-| 3. Watchlist & Earnings Calendar | 🔵 In Progress |
-| 4. Real-Time Dashboard Features | ⬜ Not Started |
+| 3. Watchlist & Earnings Calendar | ✅ Complete |
+| 4. Real-Time Dashboard Features | ✅ Merged into Phase 3 |
 | 5. Sentiment & Analyst Analysis | 🔵 In Progress |
 | 6. AI Thesis Generation | ⬜ Not Started |
 | 7. Polish & Deployment | ⬜ Not Started |
@@ -32,7 +32,7 @@ Built as a single Next.js deployment with zero recurring cost as the overriding 
 - **Hosting:** Vercel free tier
 - **Market data:** Yahoo Finance v8/v10 REST API (no Python, no `yfinance`)
 - **Sentiment data:** Reddit OAuth HTTP API + StockTwits API (no PRAW, no Twitter/X)
-- **AI/LLM:** Groq (Llama 3.3 70B) for portfolio summaries; Gemini (2.0 Flash) for thesis generation
+- **AI/LLM:** Groq (Llama 3.3 70B) for portfolio summaries; Gemini (Flash latest) for news summaries and thesis generation
 
 ### Constraints
 
@@ -74,7 +74,7 @@ Move from a single-user prototype to per-user data isolation.
 
 ---
 
-## Phase 3 — Watchlist, Earnings & Live Dashboard 🔵 In Progress
+## Phase 3 — Watchlist, Earnings & Live Dashboard ✅ Complete
 
 Track tickers of interest with earnings visibility, plus live-updating dashboard features (merged from Phase 4).
 
@@ -110,18 +110,25 @@ Dual-lens view: retail sentiment from social media vs. Wall Street analyst conse
 **Analyst data (from Yahoo Finance):**
 - [x] Analyst ratings (buy/hold/sell distribution, consensus recommendation)
 - [x] Price targets (mean, high, low, number of analysts)
-- [ ] Analyst vs. sentiment comparison visualization
+- [x] Analyst vs. sentiment comparison visualization
 
 **Social media sentiment:**
 - [ ] Reddit OAuth HTTP API integration (no PRAW — all Node.js `fetch`)
-- [ ] StockTwits API integration
-- [ ] Sentiment scoring per ticker
+- [x] StockTwits API integration
+- [x] Sentiment scoring per ticker
 - [ ] Sentiment trend visualization
 
 **News summaries:**
-- [ ] Aggregate recent news articles per watchlist ticker (Yahoo Finance news or free news API)
-- [ ] AI-generated summary of most relevant/recent articles per ticker (via Gemini)
-- [ ] News feed in watchlist ticker detail view
+- [x] Aggregate recent news articles per watchlist ticker (Yahoo Finance search API)
+- [x] AI-generated cited summary of most relevant/recent articles per ticker (via Gemini Flash)
+- [x] News feed in watchlist ticker detail view
+
+**Expandable detail panel:**
+- [x] Click-to-expand rows in watchlist table
+- [x] Three-tab detail view (Overview, News, Sentiment)
+- [x] Overview: analyst consensus meter + next earnings card
+- [x] News: AI cited summary with inline source links
+- [x] Sentiment: StockTwits sentiment bar + analyst vs. retail comparison
 
 > **Note:** Twitter/X is explicitly excluded as a sentiment source.
 

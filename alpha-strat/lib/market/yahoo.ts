@@ -1,4 +1,4 @@
-import { QuoteData, HistoricalBar, EarningsData, AnalystData } from "./types";
+import { QuoteData, HistoricalBar, EarningsData, AnalystData, NewsArticle } from "./types";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -318,6 +318,53 @@ export async function getEarnings(ticker: string): Promise<EarningsData> {
     };
   } catch {
     return empty;
+  }
+}
+
+interface YahooSearchNewsItem {
+  title?: string;
+  publisher?: string;
+  link?: string;
+  providerPublishTime?: number;
+}
+
+interface YahooSearchResponse {
+  news?: YahooSearchNewsItem[];
+}
+
+export async function getNews(ticker: string): Promise<NewsArticle[]> {
+  try {
+    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(
+      ticker,
+    )}&newsCount=10&quotesCount=0&enableFuzzyQuery=false`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+      },
+    });
+
+    if (!response.ok) return [];
+
+    const json = (await response.json()) as YahooSearchResponse;
+    const news = json.news ?? [];
+
+    const articles: NewsArticle[] = news
+      .filter((item) => item.title && item.link)
+      .map((item) => ({
+        title: item.title as string,
+        publisher: item.publisher ?? "Unknown",
+        link: item.link as string,
+        publishedAt:
+          item.providerPublishTime !== undefined
+            ? new Date(item.providerPublishTime * 1000).toISOString()
+            : new Date().toISOString(),
+      }))
+      .slice(0, 8);
+
+    return articles;
+  } catch {
+    return [];
   }
 }
 
