@@ -66,6 +66,8 @@
 - `app/api/macro/news/route.ts` — macro news API (shared cache, 1hr TTL)
 - `app/api/macro/preferences/route.ts` — per-user section preferences CRUD
 - `app/macro/page.tsx` + `macro-dashboard.tsx` — Macro Dashboard UI with section customization
+- `lib/ai/thesis.ts` — fundamentals-driven thesis generation (Gemini Flash Lite)
+- `app/api/market/thesis/route.ts` — thesis API route (shared cache, 7d TTL)
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)

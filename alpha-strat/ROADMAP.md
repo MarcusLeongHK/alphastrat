@@ -8,7 +8,7 @@ Built as a single Next.js deployment with zero recurring cost as the overriding 
 
 ## Current Status
 
-**Active phase: Phase 7 — AI Thesis Generation**
+**Active phase: Phase 8 — Earnings + Options**
 
 | Phase | Status |
 |-------|--------|
@@ -18,7 +18,7 @@ Built as a single Next.js deployment with zero recurring cost as the overriding 
 | 4. Real-Time Dashboard Features | ✅ Merged into Phase 3 |
 | 5. Sentiment & Analyst Analysis | ✅ Complete |
 | 6. Macro News Dashboard | ✅ Complete |
-| 7. AI Thesis Generation | ⬜ Not Started |
+| 7. AI Thesis Generation | ✅ Complete |
 | 8. Earnings + Options | ⬜ Not Started |
 | 9. Polish & Deployment | ⬜ Not Started |
 
@@ -147,15 +147,17 @@ Cross-market macro outlook powered by RSS feeds and AI synthesis.
 
 ---
 
-## Phase 7 — AI Thesis Generation ⬜ Not Started
+## Phase 7 — AI Thesis Generation ✅ Complete
 
-LLM-generated investment framing per position, layered on top of Phase 5 sentiment data.
+Fundamentals-driven investment thesis generation via Gemini Flash Lite, with shared 7-day caching.
 
-- [ ] Bull/bear/base case thesis for each position
-- [ ] Forward-looking valuation metrics
-- [ ] AI-powered risk assessment
-- [ ] Comparative analysis against sector peers
-- [ ] Uses LLM API (Gemini/Groq free tier keys)
+- [x] Bull/bear/base case thesis for each watchlist ticker (up to 8 sentences each, institutional-investor quality)
+- [x] Investment rating (Strong Buy/Buy/Hold/Sell/Strong Sell) with rationale
+- [x] LLM-selected key metrics with context (6-8 per ticker)
+- [x] Yahoo Finance fundamentals fetcher — 7 quoteSummary modules in one request
+- [x] Thesis tab in watchlist detail panel (on-demand, lazy-loaded)
+- [x] Shared cache (7-day TTL) — first user pays generation cost, all others get instant cache hit
+- [x] Refresh button for on-demand re-generation
 
 ---
 

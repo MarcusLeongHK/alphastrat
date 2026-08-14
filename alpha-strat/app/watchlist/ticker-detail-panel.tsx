@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import type {
   AnalystData,
   EarningsData,
@@ -60,7 +60,24 @@ interface SocialSentimentData {
   comparison: string | null;
 }
 
-type Tab = "overview" | "news" | "sentiment";
+interface ThesisKeyMetric {
+  label: string;
+  value: string;
+  context: string;
+}
+
+interface ThesisData {
+  ticker: string;
+  rating: string;
+  ratingRationale: string;
+  bullCase: string;
+  bearCase: string;
+  baseCase: string;
+  keyMetrics: ThesisKeyMetric[];
+  generatedAt: string;
+}
+
+type Tab = "overview" | "news" | "sentiment" | "thesis";
 
 function formatUsd(value: number): string {
   return value.toLocaleString(undefined, {
@@ -303,6 +320,18 @@ function SentimentSourceCard({
   );
 }
 
+function thesisRatingColor(rating: string): string {
+  if (rating === "Strong Buy" || rating === "Buy") return "text-emerald-500";
+  if (rating === "Hold") return "text-amber-500";
+  return "text-red-500";
+}
+
+function thesisRatingBg(rating: string): string {
+  if (rating === "Strong Buy" || rating === "Buy") return "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/50";
+  if (rating === "Hold") return "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50";
+  return "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/50";
+}
+
 interface TickerDetailPanelProps {
   ticker: string;
   quote: QuoteData | undefined;
@@ -323,17 +352,31 @@ export function TickerDetailPanel({
   const [sentimentFetched, setSentimentFetched] = useState(false);
   const [socialSentiment, setSocialSentiment] = useState<SocialSentimentData | null>(null);
   const [socialFetched, setSocialFetched] = useState(false);
+  const [thesisData, setThesisData] = useState<ThesisData | null>(null);
+  const [thesisFetched, setThesisFetched] = useState(false);
+  const [thesisError, setThesisError] = useState(false);
+  const [thesisRefreshing, setThesisRefreshing] = useState(false);
   const [prevTicker, setPrevTicker] = useState(ticker);
+  const refreshTickerRef = useRef(ticker);
 
   if (ticker !== prevTicker) {
     setPrevTicker(ticker);
     setSocialSentiment(null);
     setSocialFetched(false);
+    setThesisData(null);
+    setThesisFetched(false);
+    setThesisError(false);
+    setThesisRefreshing(false);
   }
+
+  useEffect(() => {
+    refreshTickerRef.current = ticker;
+  }, [ticker]);
 
   const newsLoading = !newsFetched;
   const sentimentLoading = !sentimentFetched;
   const socialLoading = !socialFetched;
+  const thesisLoading = !thesisFetched;
 
   useEffect(() => {
     let cancelled = false;
@@ -406,10 +449,65 @@ export function TickerDetailPanel({
     };
   }, [ticker, activeTab, socialFetched]);
 
+  useEffect(() => {
+    if (activeTab !== "thesis" || thesisFetched) return;
+
+    let cancelled = false;
+
+    fetch(`/api/market/thesis?ticker=${ticker}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<ThesisData>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setThesisData(data);
+          setThesisFetched(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setThesisError(true);
+          setThesisFetched(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, activeTab, thesisFetched]);
+
+  const handleThesisRefresh = useCallback(() => {
+    const refreshTicker = ticker;
+    refreshTickerRef.current = refreshTicker;
+    setThesisRefreshing(true);
+    setThesisError(false);
+
+    fetch(`/api/market/thesis?ticker=${refreshTicker}&refresh=true`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<ThesisData>;
+      })
+      .then((data) => {
+        if (refreshTickerRef.current === refreshTicker) {
+          setThesisData(data);
+          setThesisFetched(true);
+          setThesisRefreshing(false);
+        }
+      })
+      .catch(() => {
+        if (refreshTickerRef.current === refreshTicker) {
+          setThesisError(true);
+          setThesisRefreshing(false);
+        }
+      });
+  }, [ticker]);
+
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
     { key: "news", label: "News" },
     { key: "sentiment", label: "Sentiment" },
+    { key: "thesis", label: "Thesis" },
   ];
 
   return (
@@ -805,6 +903,114 @@ export function TickerDetailPanel({
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {activeTab === "thesis" && (
+        <div className="flex flex-col gap-4">
+          {thesisLoading || thesisRefreshing ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
+              <p className="text-xs text-zinc-400">Generating thesis...</p>
+            </div>
+          ) : thesisError ? (
+            <div className="flex flex-col items-center gap-2 py-6">
+              <p className="text-xs text-zinc-400">Unable to generate thesis. Try again later.</p>
+              <button
+                onClick={handleThesisRefresh}
+                className="rounded-md bg-zinc-200 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+              >
+                Retry
+              </button>
+            </div>
+          ) : thesisData ? (
+            <>
+              {/* Rating Header */}
+              <div className={`rounded-lg border p-4 ${thesisRatingBg(thesisData.rating)}`}>
+                <div className="flex items-baseline justify-between">
+                  <span className={`text-xl font-bold ${thesisRatingColor(thesisData.rating)}`}>
+                    {thesisData.rating}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    Investment Rating
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
+                  {thesisData.ratingRationale}
+                </p>
+              </div>
+
+              {/* Key Metrics Grid */}
+              {thesisData.keyMetrics.length > 0 && (
+                <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+                  <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    Key Metrics
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {thesisData.keyMetrics.map((metric, i) => (
+                      <div key={i} className="flex flex-col">
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                          {metric.label}
+                        </span>
+                        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          {metric.value}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                          {metric.context}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bull Case */}
+              <div className="rounded-lg border border-l-4 border-zinc-200 border-l-emerald-500 p-4 dark:border-zinc-800 dark:border-l-emerald-400">
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Bull Case
+                </h4>
+                <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+                  {thesisData.bullCase}
+                </p>
+              </div>
+
+              {/* Bear Case */}
+              <div className="rounded-lg border border-l-4 border-zinc-200 border-l-red-500 p-4 dark:border-zinc-800 dark:border-l-red-400">
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+                  Bear Case
+                </h4>
+                <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+                  {thesisData.bearCase}
+                </p>
+              </div>
+
+              {/* Base Case */}
+              <div className="rounded-lg border border-l-4 border-zinc-200 border-l-amber-500 p-4 dark:border-zinc-800 dark:border-l-amber-400">
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  Base Case
+                </h4>
+                <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+                  {thesisData.baseCase}
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  Generated {timeAgo(thesisData.generatedAt)}
+                </span>
+                <button
+                  onClick={handleThesisRefresh}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
       )}
     </div>
