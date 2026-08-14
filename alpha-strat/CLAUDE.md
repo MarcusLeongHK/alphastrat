@@ -13,9 +13,10 @@
 - No Python — all data fetching via Node.js `fetch()` directly
 - No heavy SDKs — direct REST `fetch()` for AI providers (Groq, Gemini)
 - Yahoo Finance v8/v10 REST endpoints for market data (no yfinance)
-- Reddit OAuth HTTP API for sentiment (no PRAW) — Phase 5
-- Generic cache utility: `lib/cache/index.ts` → `getOrFetch<T>()`
-- Cache table with `cache_key`, `cache_type`, `data` (jsonb), `expires_at`
+- Adanos API for social sentiment (Reddit + Twitter/X), multi-key round-robin — Phase 5
+- Reddit RSS as fallback sentiment source
+- Generic cache utility: `lib/cache/index.ts` → `getOrFetch<T>()` with `user_id` + composite upsert
+- Cache table with `user_id`, `cache_key`, `cache_type`, `data` (jsonb), `expires_at` — unique on `(user_id, cache_key)`
 - Pure financial calculation functions in `lib/finance/` — all unit tested
 - Server Actions for mutations, API Routes for data fetching
 - `cookies()` is async in Next.js 16
@@ -50,14 +51,15 @@
 - `app/watchlist/actions.ts` — watchlist server actions
 - `lib/ai/client.ts` — dual-provider AI client (Groq for summaries, Gemini for thesis)
 - `lib/ai/prompts.ts` — system prompts and prompt builders
+- `lib/market/adanos.ts` — Adanos API client (Reddit + Twitter/X sentiment, multi-key round-robin)
+- `lib/market/reddit.ts` — Reddit RSS sentiment fetcher (fallback, multi-subreddit search)
 - `lib/market/stocktwits.ts` — StockTwits sentiment client (blocked by Cloudflare as of Aug 2026)
-- `lib/market/reddit.ts` — Reddit RSS sentiment fetcher (multi-subreddit search, rss-parser)
 - `lib/ai/news-summary.ts` — AI news summarization
 - `lib/ai/reddit-sentiment.ts` — Groq-powered Reddit sentiment analysis
 - `lib/ai/sentiment-comparison.ts` — Groq-powered retail vs institutional comparison
 - `app/api/market/news/route.ts` — news + AI summary per ticker
 - `app/api/market/sentiment/route.ts` — analyst recommendation trend data
-- `app/api/market/reddit-sentiment/route.ts` — Reddit sentiment + AI analysis + comparison
+- `app/api/market/reddit-sentiment/route.ts` — social sentiment (Adanos Reddit + Twitter, cached 24hr)
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)

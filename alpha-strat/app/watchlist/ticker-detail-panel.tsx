@@ -35,8 +35,7 @@ interface RecommendationTrend {
   trend: RecommendationPeriod[];
 }
 
-interface AdanosSentimentData {
-  ticker: string;
+interface AdanosSource {
   found: boolean;
   buzzScore: number;
   trend: string;
@@ -44,27 +43,20 @@ interface AdanosSentimentData {
   sentimentScore: number;
   bullishPct: number;
   bearishPct: number;
-  totalUpvotes: number;
-  uniquePosts: number;
-  subredditCount: number;
   periodDays: number;
-  dailyTrend: { date: string; mentions: number; sentimentScore: number; buzzScore: number }[];
-  topSubreddits: { subreddit: string; mentions: number; sentimentScore: number; buzzScore: number }[];
-}
-
-interface RedditFallback {
-  posts: { title: string; score: number; numComments: number; subreddit: string; permalink: string }[];
-  aiSummary: string | null;
-  postCount: number;
-  totalScore: number;
-  avgScore: number;
+  totalUpvotes?: number;
+  uniquePosts?: number;
+  uniqueTweets?: number;
+  topSubreddits?: { subreddit: string; mentions: number }[];
+  topTweets?: { textSnippet: string; sentimentLabel: string; likes: number; retweets: number; author: string }[];
 }
 
 interface SocialSentimentData {
   ticker: string;
-  source: "adanos" | "reddit-rss";
-  adanos: AdanosSentimentData | null;
-  redditFallback: RedditFallback | null;
+  reddit: AdanosSource | null;
+  twitter: AdanosSource | null;
+  news: AdanosSource | null;
+  polymarket: AdanosSource | null;
   comparison: string | null;
 }
 
@@ -211,6 +203,104 @@ function renderCitedSummary(
     }
     return <span key={i}>{part}</span>;
   });
+}
+
+const colorMap = {
+  orange: {
+    border: "border-orange-200 dark:border-orange-900/50",
+    bg: "bg-orange-50 dark:bg-orange-950/20",
+    label: "text-orange-600 dark:text-orange-400",
+  },
+  sky: {
+    border: "border-sky-200 dark:border-sky-900/50",
+    bg: "bg-sky-50 dark:bg-sky-950/20",
+    label: "text-sky-600 dark:text-sky-400",
+  },
+} as const;
+
+function sentimentLabel(score: number): { text: string; color: string } {
+  if (score > 0.2) return { text: "Bullish", color: "text-emerald-500" };
+  if (score < -0.2) return { text: "Bearish", color: "text-red-500" };
+  return { text: "Neutral", color: "text-amber-500" };
+}
+
+function trendLabel(trend: string): { text: string; color: string } {
+  if (trend === "rising") return { text: "Rising", color: "text-emerald-500" };
+  if (trend === "falling") return { text: "Falling", color: "text-red-500" };
+  return { text: "Stable", color: "text-zinc-400" };
+}
+
+function formatCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
+function SentimentSourceCard({
+  label,
+  color,
+  source,
+  detail,
+}: {
+  label: string;
+  color: keyof typeof colorMap;
+  source: AdanosSource;
+  detail: React.ReactNode;
+}) {
+  const c = colorMap[color];
+  const sent = sentimentLabel(source.sentimentScore);
+  const trend = trendLabel(source.trend);
+
+  return (
+    <div className={`rounded border ${c.border} ${c.bg} px-3 py-2`}>
+      <div className="mb-2 flex items-center justify-between">
+        <div className={`text-[10px] font-semibold uppercase tracking-wider ${c.label}`}>
+          {label}
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+          <span>{formatCount(source.mentions)} mentions</span>
+          <span className="text-zinc-300 dark:text-zinc-600">|</span>
+          <span>{source.periodDays}d</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="text-center">
+          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Buzz</div>
+          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+            {source.buzzScore.toFixed(1)}
+          </div>
+          <div className={`text-[10px] font-medium ${trend.color}`}>{trend.text}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Sentiment</div>
+          <div className={`text-lg font-bold tabular-nums ${sent.color}`}>
+            {source.sentimentScore > 0 ? "+" : ""}{source.sentimentScore.toFixed(2)}
+          </div>
+          <div className={`text-[10px] ${sent.color}`}>{sent.text}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Engagement</div>
+          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+            {formatCount(source.totalUpvotes ?? source.uniqueTweets ?? 0)}
+          </div>
+          <div className="text-[10px] text-zinc-400">
+            {source.totalUpvotes ? "upvotes" : "tweets"}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3">
+        <div className="flex h-3 overflow-hidden rounded-full">
+          <div className="bg-emerald-500 transition-all" style={{ width: `${source.bullishPct}%` }} />
+          <div className="bg-zinc-300 transition-all dark:bg-zinc-600" style={{ width: `${100 - source.bullishPct - source.bearishPct}%` }} />
+          <div className="bg-red-500 transition-all" style={{ width: `${source.bearishPct}%` }} />
+        </div>
+        <div className="mt-0.5 flex justify-between text-[10px]">
+          <span className="text-emerald-500">{source.bullishPct.toFixed(0)}% Bullish</span>
+          <span className="text-red-500">{source.bearishPct.toFixed(0)}% Bearish</span>
+        </div>
+      </div>
+      {detail}
+    </div>
+  );
 }
 
 interface TickerDetailPanelProps {
@@ -650,120 +740,48 @@ export function TickerDetailPanel({
                 })()}
                 {socialLoading ? (
                   <div className="h-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-                ) : socialSentiment?.adanos ? (
+                ) : socialSentiment && (socialSentiment.reddit || socialSentiment.twitter) ? (
                   <>
-                    <div className="rounded border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-900/50 dark:bg-blue-950/20">
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                          Social Sentiment
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                          <span>{socialSentiment.adanos.mentions} mentions</span>
-                          <span className="text-zinc-300 dark:text-zinc-600">|</span>
-                          <span>{socialSentiment.adanos.uniquePosts} posts</span>
-                          <span className="text-zinc-300 dark:text-zinc-600">|</span>
-                          <span>{socialSentiment.adanos.periodDays}d</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="text-center">
-                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Buzz</div>
-                          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
-                            {socialSentiment.adanos.buzzScore.toFixed(1)}
-                          </div>
-                          <div className={`text-[10px] font-medium ${
-                            socialSentiment.adanos.trend === "up" ? "text-emerald-500"
-                              : socialSentiment.adanos.trend === "down" ? "text-red-500"
-                              : "text-zinc-400"
-                          }`}>
-                            {socialSentiment.adanos.trend === "up" ? "Trending up"
-                              : socialSentiment.adanos.trend === "down" ? "Trending down"
-                              : "Stable"}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Sentiment</div>
-                          <div className={`text-lg font-bold tabular-nums ${
-                            socialSentiment.adanos.sentimentScore > 0.6 ? "text-emerald-500"
-                              : socialSentiment.adanos.sentimentScore < 0.4 ? "text-red-500"
-                              : "text-amber-500"
-                          }`}>
-                            {(socialSentiment.adanos.sentimentScore * 100).toFixed(0)}%
-                          </div>
-                          <div className="text-[10px] text-zinc-400">
-                            {socialSentiment.adanos.sentimentScore > 0.6 ? "Bullish"
-                              : socialSentiment.adanos.sentimentScore < 0.4 ? "Bearish"
-                              : "Neutral"}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Upvotes</div>
-                          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
-                            {socialSentiment.adanos.totalUpvotes >= 1000
-                              ? `${(socialSentiment.adanos.totalUpvotes / 1000).toFixed(1)}k`
-                              : socialSentiment.adanos.totalUpvotes}
-                          </div>
-                          <div className="text-[10px] text-zinc-400">engagement</div>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <div className="mb-1 text-[10px] text-zinc-400 dark:text-zinc-500">
-                          Bullish / Bearish Split
-                        </div>
-                        <div className="flex h-3 overflow-hidden rounded-full">
-                          <div
-                            className="bg-emerald-500 transition-all"
-                            style={{ width: `${socialSentiment.adanos.bullishPct}%` }}
-                          />
-                          <div
-                            className="bg-red-500 transition-all"
-                            style={{ width: `${socialSentiment.adanos.bearishPct}%` }}
-                          />
-                        </div>
-                        <div className="mt-0.5 flex justify-between text-[10px]">
-                          <span className="text-emerald-500">{socialSentiment.adanos.bullishPct.toFixed(0)}% Bullish</span>
-                          <span className="text-red-500">{socialSentiment.adanos.bearishPct.toFixed(0)}% Bearish</span>
-                        </div>
-                      </div>
-                      {socialSentiment.adanos.topSubreddits.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {socialSentiment.adanos.topSubreddits.slice(0, 5).map((sub) => (
-                            <span
-                              key={sub.subreddit}
-                              className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                            >
-                              r/{sub.subreddit} ({sub.mentions})
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {socialSentiment.comparison && (
-                      <div className="rounded border border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-900/50 dark:bg-violet-950/20">
-                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
-                          Retail vs Institutional
-                        </div>
-                        <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
-                          {socialSentiment.comparison}
-                        </p>
-                      </div>
+                    {socialSentiment.reddit && (
+                      <SentimentSourceCard
+                        label="Reddit"
+                        color="orange"
+                        source={socialSentiment.reddit}
+                        detail={
+                          socialSentiment.reddit.topSubreddits && socialSentiment.reddit.topSubreddits.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {socialSentiment.reddit.topSubreddits.slice(0, 5).map((sub) => (
+                                <span key={sub.subreddit} className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                                  r/{sub.subreddit} ({sub.mentions})
+                                </span>
+                              ))}
+                            </div>
+                          ) : null
+                        }
+                      />
                     )}
-                  </>
-                ) : socialSentiment?.redditFallback && socialSentiment.redditFallback.postCount > 0 ? (
-                  <>
-                    <div className="rounded border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-900/50 dark:bg-orange-950/20">
-                      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400">
-                        Reddit Retail Sentiment
-                        <span className="font-normal normal-case text-zinc-400">
-                          ({socialSentiment.redditFallback.postCount} posts)
-                        </span>
-                      </div>
-                      {socialSentiment.redditFallback.aiSummary && (
-                        <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
-                          {socialSentiment.redditFallback.aiSummary}
-                        </p>
-                      )}
-                    </div>
+                    {socialSentiment.twitter && (
+                      <SentimentSourceCard
+                        label="Twitter / X"
+                        color="sky"
+                        source={socialSentiment.twitter}
+                        detail={
+                          socialSentiment.twitter.topTweets && socialSentiment.twitter.topTweets.length > 0 ? (
+                            <div className="mt-2 flex flex-col gap-1">
+                              {socialSentiment.twitter.topTweets.slice(0, 3).map((tweet, i) => (
+                                <div key={i} className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                                  <span className="font-medium text-sky-600 dark:text-sky-400">@{tweet.author}</span>
+                                  {" "}{tweet.textSnippet.slice(0, 120)}{tweet.textSnippet.length > 120 ? "..." : ""}
+                                  <span className="ml-1 text-zinc-300 dark:text-zinc-600">
+                                    {tweet.likes > 0 && `${tweet.likes} likes`}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null
+                        }
+                      />
+                    )}
                     {socialSentiment.comparison && (
                       <div className="rounded border border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-900/50 dark:bg-violet-950/20">
                         <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">

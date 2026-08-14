@@ -743,4 +743,98 @@ Every significant architecture and implementation decision, with the options con
 
 **Reasoning:** The value of comparing retail vs. institutional sentiment is in the nuance — not just "they agree" or "they disagree" but *why* and *what it means*. A rule-based system would need to categorize Reddit sentiment into buckets (bullish/bearish/neutral), losing the subtlety of mixed signals. The AI reads the analyst consensus rating, analyst count, and the full Reddit sentiment summary, then writes 2-3 sentences identifying congruence or divergence with context. This produces insights like "both groups are bullish but retail is more speculative, focused on short-term price targets while analysts cite fundamentals." Cost is negligible — one additional Groq call per ticker per 8 hours (cached).
 
+## Decision 41: New Phase — Macro News Dashboard (Next Up)
+
+**Date:** Roadmap update (2026-08-14)
+
+**Context:** Portfolio and watchlist features so far are ticker-specific (quotes, earnings, analyst ratings, sentiment). There's no dedicated view for market-wide macro context — the kind of news that moves everything at once regardless of which stocks are held.
+
+**Scope:**
+- A dedicated page covering macro market news, separate from the per-ticker watchlist/news views
+- Geopolitics coverage (wars, elections, trade disputes, sanctions)
+- Commodities: oil, metals, and food prices/news
+- Unemployment data and other labor market releases
+- Federal Reserve announcements (rate decisions, FOMC minutes, Fed speak)
+- US national news from the Fed and US government relating to equities broadly (fiscal policy, regulation, economic data releases)
+
+**Decision:** This is the next phase to implement, placed before the thesis-generation phase in the roadmap.
+
+**Reasoning:** Macro context is a prerequisite for good thesis quality (feedback_thesis_quality.md requires institutional-investor-level bull/bear cases) — an institutional-grade thesis needs to reference the macro backdrop (rate environment, commodity costs, geopolitical risk), so building this dashboard first gives the thesis phase real inputs to draw from rather than requiring it to be bolted on later. It also reuses existing infrastructure (Decision 35's cited AI summary pattern, the cache layer, and the dual AI provider setup) rather than requiring new architecture.
+
+---
+
+## Decision 42: Adanos as Primary Sentiment Source — Multi-Source Integration
+
+**Date:** Phase 5 (2026-08-14)
+
+**Context:** Following Decision 38 (Reddit RSS) and the discovery that StockTwits and Reddit's public/OAuth APIs are increasingly blocked (see `project_api_blocks.md`), a broader sentiment aggregation approach was needed. Adanos provides a single API surface covering multiple sentiment sources.
+
+**Options considered:**
+1. **Adanos (multi-source aggregator)** — single API covering Reddit, Twitter/X, News, and Polymarket sentiment
+2. **Separate APIs per platform** — maintain individual clients for Reddit RSS, a Twitter/X source, a news API, and a prediction-market API
+3. **Paid tier of a single provider** — pay for higher rate limits on one aggregator instead of managing multiple free keys
+
+**Pros/cons:**
+
+| Option | Pros | Cons |
+|--------|------|------|
+| Adanos (multi-source) | One API, one client, one auth pattern for 4 sentiment sources; free tier usable with multiple keys; consistent response shape | Free tier capped at 250 requests/key/month — needs round-robin across keys; dependency on a single third-party aggregator |
+| Separate APIs per platform | No single point of failure; each source can be swapped independently | 4x the client code, 4x the failure modes, 4x the auth/rate-limit handling; Reddit/StockTwits already proven unreliable (Decision 38) |
+| Paid tier | Higher limits, no key juggling | Violates the $0 cost-control constraint that governs every other decision in this project |
+
+**Decision:** Adanos as the primary sentiment source across Reddit, Twitter/X, News, and Polymarket, using multiple API keys in round-robin to stay within the free tier (250 requests/key/month), with a 24-hour cache TTL to minimize API calls.
+
+**Reasoning:** A single API covering all four social/sentiment sources collapses what would otherwise be four separate integrations (each with its own auth quirks and blocking risk, as seen with StockTwits' Cloudflare block and Reddit's broken OAuth registration flow) into one client and one failure mode to handle. The free tier's 250 req/key/month limit is workable because sentiment data doesn't need to be fresher than daily for a portfolio-review use case — a 24-hour cache TTL (longer than the 8-hour TTL used for Reddit RSS in Decision 39, since Adanos aggregates and update frequency is coarser) combined with round-robin across multiple free keys keeps the app fully within Adanos's free tier at $0 cost, consistent with every prior AI/data-source decision in this log.
+
+---
+
+## Decision 43: Future Phase — Options Market Analysis
+
+**Date:** Roadmap update (2026-08-14)
+
+**Context:** Options market activity (flow, open interest, implied volatility) often reflects informed positioning ahead of price moves — a signal not captured by any current feature (price data, sentiment, analyst ratings, news).
+
+**Scope (not yet implemented — needs brainstorming in a future phase):**
+- Core question the feature should answer: "What story does the options market tell about this stock?"
+- Candidate angles: options flow, unusual options activity, put/call ratios, implied volatility skew
+
+**Decision:** Placed as a future phase, after the thesis-generation phase in the roadmap. Not being implemented now.
+
+**Reasoning:** Options data sourcing and interpretation is materially more complex than anything built so far — it needs its own brainstorming pass (per the `superpowers:brainstorming` workflow) to scope a free/low-cost data source and decide which signals (flow vs. skew vs. put/call ratio) are worth surfacing before any implementation planning begins. Sequencing it after the thesis phase keeps the roadmap focused: thesis generation is the current differentiator to finish, and options analysis is a stretch feature layered on top once the core analyzer is complete.
+
+---
+
+## Decision 44: Future Feature — Crypto Dashboard
+
+**Date:** Roadmap update (2026-08-14)
+
+**Context:** All current features (portfolio, watchlist, sentiment, news) are equities-focused. Crypto assets have different data sources, different market structure (24/7 trading, no earnings/analyst coverage), and arguably belong in a separate part of the app rather than bolted onto equity-oriented views.
+
+**Scope:**
+- A crypto-specific page focused solely on crypto-related assets, separate from the equities-focused portfolio/watchlist/thesis features
+
+**Decision:** Far-future feature, explicitly not part of the current development roadmap (not sequenced relative to the Macro News Dashboard or Options Market Analysis phases).
+
+**Reasoning:** Crypto assets don't fit cleanly into the equities data model this app is built around (Yahoo Finance quotes/earnings/analyst ratings, SPY-benchmarked risk metrics) — supporting them well would mean a new market-data source, new risk metrics (no beta-vs-SPY equivalent), and likely a new sentiment pipeline, none of which share much with the equities stack. Flagging it now as a distinct future feature keeps it from being conflated with the equities roadmap while preserving the idea for later.
+
+## Decision 45: Cache Upsert Fix — Composite Unique Constraint Mismatch
+
+**Date:** Phase 5 (2026-08-14)
+
+**Context:** During Adanos integration testing, discovered that no data was being cached at all — the entire cache table was empty despite weeks of usage. Every `getOrFetch()` call was re-fetching from external APIs (Yahoo Finance, Groq, Adanos) on every page load.
+
+**Root cause:** The `cache` table has a composite unique constraint `(user_id, cache_key)`, but the cache utility was using `onConflict: "cache_key"` (single column) and not passing `user_id` at all. Postgres rejects an `ON CONFLICT` clause that doesn't match an existing unique constraint, so every upsert silently failed. The silent `catch {}` in the cache utility hid the error completely.
+
+**Impact:** All cache types were affected — `price`, `analyst`, `earnings`, `social-sentiment`, `news`, `rec-trend`. Every API route was hitting external services on every request, burning Adanos quota, Groq tokens, and Yahoo rate limits unnecessarily.
+
+**Fix:**
+1. Added `user_id` to the upsert payload (extracted via `getClaims()`)
+2. Changed `onConflict` to `"user_id,cache_key"` to match the composite constraint
+3. Added `user_id` filter to cache reads for correctness
+4. Added error logging to the cache utility so upsert failures are no longer silent
+
+**Reasoning:** Silent failure in a caching layer is one of the most dangerous patterns — the app appears to work correctly (data is fetched and returned) but performance and cost are dramatically worse than expected. Adding the error logging ensures any future cache issues are immediately visible in server logs. The fix is a one-line change to the conflict target, but the debugging insight (checking for unique constraints vs. the ON CONFLICT clause) is the kind of Postgres knowledge that matters in production.
+
+---
+
 *This log will be updated as new decisions are made in Phases 6-7.*

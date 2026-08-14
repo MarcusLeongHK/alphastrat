@@ -1,5 +1,17 @@
 const ADANOS_BASE = "https://api.adanos.org";
 
+let keyIndex = 0;
+
+function getNextApiKey(): string | null {
+  const raw = process.env.ADANOS_API_KEY;
+  if (!raw) return null;
+  const keys = raw.split(",").map((k) => k.trim()).filter(Boolean);
+  if (keys.length === 0) return null;
+  const key = keys[keyIndex % keys.length];
+  keyIndex++;
+  return key;
+}
+
 export interface AdanosSentiment {
   ticker: string;
   found: boolean;
@@ -27,63 +39,256 @@ export interface AdanosSentiment {
   }[];
 }
 
-export async function getAdanosSentiment(
-  ticker: string
-): Promise<AdanosSentiment | null> {
-  const apiKey = process.env.ADANOS_API_KEY;
+export interface AdanosTwitterSentiment {
+  ticker: string;
+  found: boolean;
+  buzzScore: number;
+  trend: string;
+  mentions: number;
+  sentimentScore: number;
+  bullishPct: number;
+  bearishPct: number;
+  totalUpvotes: number;
+  uniqueTweets: number;
+  periodDays: number;
+  positiveCount: number;
+  negativeCount: number;
+  neutralCount: number;
+  dailyTrend: {
+    date: string;
+    mentions: number;
+    sentimentScore: number;
+    buzzScore: number;
+  }[];
+  topTweets: {
+    textSnippet: string;
+    sentimentLabel: string;
+    likes: number;
+    retweets: number;
+    author: string;
+  }[];
+}
+
+export interface AdanosNewsSentiment {
+  ticker: string;
+  found: boolean;
+  buzzScore: number;
+  trend: string;
+  mentions: number;
+  sentimentScore: number;
+  bullishPct: number;
+  bearishPct: number;
+  sourceCount: number;
+  periodDays: number;
+  positiveCount: number;
+  negativeCount: number;
+  neutralCount: number;
+  dailyTrend: {
+    date: string;
+    mentions: number;
+    sentimentScore: number;
+    buzzScore: number;
+  }[];
+  topSources: {
+    source: string;
+    mentions: number;
+    sentimentScore: number;
+    buzzScore: number;
+  }[];
+}
+
+export interface AdanosPolymarketSentiment {
+  ticker: string;
+  found: boolean;
+  buzzScore: number;
+  trend: string;
+  periodDays: number;
+  tradeCount: number;
+  marketCount: number;
+  uniqueTraders: number;
+  sentimentScore: number;
+  bullishPct: number;
+  bearishPct: number;
+  totalLiquidity: number;
+  positiveCount: number;
+  negativeCount: number;
+  neutralCount: number;
+  dailyTrend: {
+    date: string;
+    mentions: number;
+    sentimentScore: number;
+    buzzScore: number;
+  }[];
+}
+
+async function adanosFetch(path: string): Promise<Record<string, unknown> | null> {
+  const apiKey = getNextApiKey();
   if (!apiKey) return null;
 
   try {
-    const res = await fetch(
-      `${ADANOS_BASE}/reddit/stocks/v1/stock/${encodeURIComponent(ticker)}`,
-      { headers: { "X-API-Key": apiKey } }
-    );
+    const res = await fetch(`${ADANOS_BASE}${path}`, {
+      headers: { "X-API-Key": apiKey },
+    });
 
     if (!res.ok) {
-      console.warn(
-        `[adanos] Fetch for ${ticker} returned HTTP ${res.status} ${res.statusText}`
-      );
+      console.warn(`[adanos] ${path} returned HTTP ${res.status} ${res.statusText}`);
       return null;
     }
 
     const data = await res.json();
-    if (!data.found) return null;
-
-    return {
-      ticker: data.ticker,
-      found: data.found,
-      buzzScore: data.buzz_score ?? 0,
-      trend: data.trend ?? "unknown",
-      mentions: data.mentions ?? 0,
-      sentimentScore: data.sentiment_score ?? 0,
-      bullishPct: data.bullish_pct ?? 0,
-      bearishPct: data.bearish_pct ?? 0,
-      totalUpvotes: data.total_upvotes ?? 0,
-      uniquePosts: data.unique_posts ?? 0,
-      subredditCount: data.subreddit_count ?? 0,
-      periodDays: data.period_days ?? 7,
-      dailyTrend: (data.daily_trend ?? []).map(
-        (d: Record<string, unknown>) => ({
-          date: d.date as string,
-          mentions: (d.mentions as number) ?? 0,
-          sentimentScore: (d.sentiment_score as number) ?? 0,
-          buzzScore: (d.buzz_score as number) ?? 0,
-        })
-      ),
-      topSubreddits: (data.top_subreddits ?? []).map(
-        (s: Record<string, unknown>) => ({
-          subreddit: s.subreddit as string,
-          mentions: (s.mentions as number) ?? 0,
-          sentimentScore: (s.sentiment_score as number) ?? 0,
-          buzzScore: (s.buzz_score as number) ?? 0,
-        })
-      ),
-    };
+    if (data.found === false) return null;
+    return data;
   } catch (err) {
     console.warn(
-      `[adanos] Fetch for ${ticker} threw:`,
+      `[adanos] ${path} threw:`,
       err instanceof Error ? err.message : err
     );
     return null;
   }
 }
+
+export async function getAdanosRedditSentiment(
+  ticker: string
+): Promise<AdanosSentiment | null> {
+  const data = await adanosFetch(`/reddit/stocks/v1/stock/${encodeURIComponent(ticker)}`);
+  if (!data) return null;
+
+  return {
+    ticker: data.ticker as string,
+    found: true,
+    buzzScore: (data.buzz_score as number) ?? 0,
+    trend: (data.trend as string) ?? "unknown",
+    mentions: (data.mentions as number) ?? 0,
+    sentimentScore: (data.sentiment_score as number) ?? 0,
+    bullishPct: (data.bullish_pct as number) ?? 0,
+    bearishPct: (data.bearish_pct as number) ?? 0,
+    totalUpvotes: (data.total_upvotes as number) ?? 0,
+    uniquePosts: (data.unique_posts as number) ?? 0,
+    subredditCount: (data.subreddit_count as number) ?? 0,
+    periodDays: (data.period_days as number) ?? 7,
+    dailyTrend: ((data.daily_trend as Record<string, unknown>[]) ?? []).map((d) => ({
+      date: d.date as string,
+      mentions: (d.mentions as number) ?? 0,
+      sentimentScore: (d.sentiment_score as number) ?? 0,
+      buzzScore: (d.buzz_score as number) ?? 0,
+    })),
+    topSubreddits: ((data.top_subreddits as Record<string, unknown>[]) ?? []).map((s) => ({
+      subreddit: s.subreddit as string,
+      mentions: (s.mentions as number) ?? 0,
+      sentimentScore: (s.sentiment_score as number) ?? 0,
+      buzzScore: (s.buzz_score as number) ?? 0,
+    })),
+  };
+}
+
+export async function getAdanosTwitterSentiment(
+  ticker: string
+): Promise<AdanosTwitterSentiment | null> {
+  const data = await adanosFetch(`/x/stocks/v1/stock/${encodeURIComponent(ticker)}`);
+  if (!data) return null;
+
+  return {
+    ticker: data.ticker as string,
+    found: true,
+    buzzScore: (data.buzz_score as number) ?? 0,
+    trend: (data.trend as string) ?? "unknown",
+    mentions: (data.mentions as number) ?? 0,
+    sentimentScore: (data.sentiment_score as number) ?? 0,
+    bullishPct: (data.bullish_pct as number) ?? 0,
+    bearishPct: (data.bearish_pct as number) ?? 0,
+    totalUpvotes: (data.total_upvotes as number) ?? 0,
+    uniqueTweets: (data.unique_tweets as number) ?? 0,
+    periodDays: (data.period_days as number) ?? 7,
+    positiveCount: (data.positive_count as number) ?? 0,
+    negativeCount: (data.negative_count as number) ?? 0,
+    neutralCount: (data.neutral_count as number) ?? 0,
+    dailyTrend: ((data.daily_trend as Record<string, unknown>[]) ?? []).map((d) => ({
+      date: d.date as string,
+      mentions: (d.mentions as number) ?? 0,
+      sentimentScore: (d.sentiment_score as number) ?? 0,
+      buzzScore: (d.buzz_score as number) ?? 0,
+    })),
+    topTweets: ((data.top_tweets as Record<string, unknown>[]) ?? []).slice(0, 5).map((t) => ({
+      textSnippet: (t.text_snippet as string) ?? "",
+      sentimentLabel: (t.sentiment_label as string) ?? "neutral",
+      likes: (t.likes as number) ?? 0,
+      retweets: (t.retweets as number) ?? 0,
+      author: (t.author as string) ?? "",
+    })),
+  };
+}
+
+export async function getAdanosNewsSentiment(
+  ticker: string
+): Promise<AdanosNewsSentiment | null> {
+  const data = await adanosFetch(`/news/stocks/v1/stock/${encodeURIComponent(ticker)}`);
+  if (!data) return null;
+
+  return {
+    ticker: data.ticker as string,
+    found: true,
+    buzzScore: (data.buzz_score as number) ?? 0,
+    trend: (data.trend as string) ?? "unknown",
+    mentions: (data.mentions as number) ?? 0,
+    sentimentScore: (data.sentiment_score as number) ?? 0,
+    bullishPct: (data.bullish_pct as number) ?? 0,
+    bearishPct: (data.bearish_pct as number) ?? 0,
+    sourceCount: (data.source_count as number) ?? 0,
+    periodDays: (data.period_days as number) ?? 7,
+    positiveCount: (data.positive_count as number) ?? 0,
+    negativeCount: (data.negative_count as number) ?? 0,
+    neutralCount: (data.neutral_count as number) ?? 0,
+    dailyTrend: ((data.daily_trend as Record<string, unknown>[]) ?? []).map((d) => ({
+      date: d.date as string,
+      mentions: (d.mentions as number) ?? 0,
+      sentimentScore: (d.sentiment_score as number) ?? 0,
+      buzzScore: (d.buzz_score as number) ?? 0,
+    })),
+    topSources: ((data.top_sources as Record<string, unknown>[]) ?? []).map((s) => ({
+      source: s.source as string,
+      mentions: (s.mentions as number) ?? 0,
+      sentimentScore: (s.sentiment_score as number) ?? 0,
+      buzzScore: (s.buzz_score as number) ?? 0,
+    })),
+  };
+}
+
+export async function getAdanosPolymarketSentiment(
+  ticker: string
+): Promise<AdanosPolymarketSentiment | null> {
+  const data = await adanosFetch(`/polymarket/stocks/v1/stock/${encodeURIComponent(ticker)}`);
+  if (!data) return null;
+
+  return {
+    ticker: data.ticker as string,
+    found: true,
+    buzzScore: (data.buzz_score as number) ?? 0,
+    trend: (data.trend as string) ?? "unknown",
+    periodDays: (data.period_days as number) ?? 7,
+    tradeCount: (data.trade_count as number) ?? 0,
+    marketCount: (data.market_count as number) ?? 0,
+    uniqueTraders: (data.unique_traders as number) ?? 0,
+    sentimentScore: (data.sentiment_score as number) ?? 0,
+    bullishPct: (data.bullish_pct as number) ?? 0,
+    bearishPct: (data.bearish_pct as number) ?? 0,
+    totalLiquidity: (data.total_liquidity as number) ?? 0,
+    positiveCount: (data.positive_count as number) ?? 0,
+    negativeCount: (data.negative_count as number) ?? 0,
+    neutralCount: (data.neutral_count as number) ?? 0,
+    dailyTrend: ((data.daily_trend as Record<string, unknown>[]) ?? []).map((d) => ({
+      date: d.date as string,
+      mentions: (d.mentions as number) ?? 0,
+      sentimentScore: (d.sentiment_score as number) ?? 0,
+      buzzScore: (d.buzz_score as number) ?? 0,
+    })),
+  };
+}
+
+export function getAvailableSources(): string[] {
+  const raw = process.env.ADANOS_API_KEY;
+  if (!raw) return [];
+  return ["reddit", "twitter"];
+}
+
+// Keep backward compat for existing code
+export const getAdanosSentiment = getAdanosRedditSentiment;

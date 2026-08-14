@@ -410,6 +410,13 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
     };
   }, [tickers]);
 
+  useEffect(() => {
+    if (tickers.length === 0) return;
+    tickers.forEach((t) => {
+      fetch(`/api/market/reddit-sentiment?ticker=${t}`).catch(() => {});
+    });
+  }, [tickers]);
+
   if (items.length === 0) {
     return (
       <p className="text-sm text-zinc-500 dark:text-zinc-400">

@@ -1,25 +1,62 @@
 import { NextResponse } from "next/server";
 import { getOrFetch } from "@/lib/cache";
-import { getAdanosSentiment, type AdanosSentiment } from "@/lib/market/adanos";
-import { getRedditPosts } from "@/lib/market/reddit";
-import { generateRedditSentiment } from "@/lib/ai/reddit-sentiment";
+import {
+  getAdanosRedditSentiment,
+  getAdanosTwitterSentiment,
+  getAdanosNewsSentiment,
+  getAdanosPolymarketSentiment,
+  getAvailableSources,
+  type AdanosSentiment,
+  type AdanosTwitterSentiment,
+  type AdanosNewsSentiment,
+  type AdanosPolymarketSentiment,
+} from "@/lib/market/adanos";
 import { generateSentimentComparison } from "@/lib/ai/sentiment-comparison";
 import { getAnalystData } from "@/lib/market/yahoo";
-import { ADANOS_TTL, SENTIMENT_TTL } from "@/lib/cache/freshness";
+import { ADANOS_TTL } from "@/lib/cache/freshness";
 import { createClient } from "@/lib/supabase/server";
 
 interface SocialSentimentResponse {
   ticker: string;
-  source: "adanos" | "reddit-rss";
-  adanos: AdanosSentiment | null;
-  redditFallback: {
-    posts: { title: string; score: number; numComments: number; subreddit: string; permalink: string }[];
-    aiSummary: string | null;
-    postCount: number;
-    totalScore: number;
-    avgScore: number;
-  } | null;
+  reddit: AdanosSentiment | null;
+  twitter: AdanosTwitterSentiment | null;
+  news: AdanosNewsSentiment | null;
+  polymarket: AdanosPolymarketSentiment | null;
   comparison: string | null;
+}
+
+function buildComparisonContext(
+  reddit: AdanosSentiment | null,
+  twitter: AdanosTwitterSentiment | null,
+  news: AdanosNewsSentiment | null,
+  polymarket: AdanosPolymarketSentiment | null
+): string {
+  const parts: string[] = [];
+
+  if (reddit) {
+    parts.push(
+      `Reddit: ${reddit.bullishPct.toFixed(0)}% bullish, ${reddit.bearishPct.toFixed(0)}% bearish, ${reddit.mentions} mentions, buzz ${reddit.buzzScore.toFixed(1)}`
+    );
+  }
+  if (twitter) {
+    parts.push(
+      `Twitter/X: ${twitter.bullishPct.toFixed(0)}% bullish, ${twitter.bearishPct.toFixed(0)}% bearish, ${twitter.mentions} mentions, buzz ${twitter.buzzScore.toFixed(1)}`
+    );
+  }
+  if (news) {
+    parts.push(
+      `News: ${news.bullishPct.toFixed(0)}% bullish, ${news.bearishPct.toFixed(0)}% bearish, ${news.mentions} mentions across ${news.sourceCount} sources`
+    );
+  }
+  if (polymarket) {
+    parts.push(
+      `Polymarket: ${polymarket.bullishPct.toFixed(0)}% bullish, ${polymarket.bearishPct.toFixed(0)}% bearish, ${polymarket.tradeCount} trades, $${(polymarket.totalLiquidity / 1000).toFixed(0)}k liquidity`
+    );
+  }
+
+  return parts.length > 0
+    ? `Social sentiment breakdown: ${parts.join(". ")}.`
+    : "";
 }
 
 export async function GET(request: Request) {
@@ -48,67 +85,32 @@ export async function GET(request: Request) {
       "social-sentiment",
       ADANOS_TTL,
       async () => {
-        const [adanos, analyst] = await Promise.all([
-          getAdanosSentiment(ticker),
+        const sources = getAvailableSources();
+
+        const [reddit, twitter, news, polymarket, analyst] = await Promise.all([
+          sources.includes("reddit") ? getAdanosRedditSentiment(ticker) : Promise.resolve(null),
+          sources.includes("twitter") ? getAdanosTwitterSentiment(ticker) : Promise.resolve(null),
+          sources.includes("news") ? getAdanosNewsSentiment(ticker) : Promise.resolve(null),
+          sources.includes("polymarket") ? getAdanosPolymarketSentiment(ticker) : Promise.resolve(null),
           getAnalystData(ticker),
         ]);
 
-        if (adanos) {
-          let comparison: string | null = null;
-          if (analyst.recommendationKey) {
-            const retailSummary = adanos.sentimentScore > 0.6
-              ? "bullish"
-              : adanos.sentimentScore < 0.4
-                ? "bearish"
-                : "mixed";
-            comparison = await generateSentimentComparison(
-              ticker,
-              analyst.recommendationKey.replace("_", " "),
-              analyst.numberOfAnalysts ?? 0,
-              `Reddit retail sentiment is ${retailSummary} with ${adanos.bullishPct.toFixed(0)}% bullish and ${adanos.bearishPct.toFixed(0)}% bearish across ${adanos.mentions} mentions. Buzz score: ${adanos.buzzScore.toFixed(1)}, trend: ${adanos.trend}.`
-            );
-          }
-
-          return {
-            ticker,
-            source: "adanos" as const,
-            adanos,
-            redditFallback: null,
-            comparison,
-          };
-        }
-
-        const posts = await getRedditPosts(ticker);
-        const aiSummary = await generateRedditSentiment(ticker, posts);
-        const totalScore = posts.reduce((sum, p) => sum + p.score, 0);
-
         let comparison: string | null = null;
-        if (aiSummary && analyst.recommendationKey) {
+        const context = buildComparisonContext(reddit, twitter, news, polymarket);
+        if (context && analyst.recommendationKey) {
           comparison = await generateSentimentComparison(
             ticker,
             analyst.recommendationKey.replace("_", " "),
             analyst.numberOfAnalysts ?? 0,
-            aiSummary
+            context
           );
         }
 
-        return {
-          ticker,
-          source: "reddit-rss" as const,
-          adanos: null,
-          redditFallback: {
-            posts,
-            aiSummary,
-            postCount: posts.length,
-            totalScore,
-            avgScore: posts.length > 0 ? Math.round(totalScore / posts.length) : 0,
-          },
-          comparison,
-        };
+        return { ticker, reddit, twitter, news, polymarket, comparison };
       },
       {
         shouldCache: (result) =>
-          result.source === "adanos" || (result.redditFallback?.postCount ?? 0) > 0,
+          !!(result.reddit || result.twitter || result.news || result.polymarket),
       }
     );
 
