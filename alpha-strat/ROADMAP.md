@@ -8,17 +8,19 @@ Built as a single Next.js deployment with zero recurring cost as the overriding 
 
 ## Current Status
 
-**Active phase: Phase 5 — Sentiment & Analyst Analysis**
+**Active phase: Phase 7 — AI Thesis Generation**
 
 | Phase | Status |
 |-------|--------|
 | 1. Portfolio Analyzer UI | ✅ Complete |
 | 2. Authentication & Authorization | ✅ Complete |
-| 3. Watchlist & Earnings Calendar | ✅ Complete |
+| 3. Watchlist, Earnings & Live Dashboard | ✅ Complete |
 | 4. Real-Time Dashboard Features | ✅ Merged into Phase 3 |
-| 5. Sentiment & Analyst Analysis | 🔵 In Progress |
-| 6. AI Thesis Generation | ⬜ Not Started |
-| 7. Polish & Deployment | ⬜ Not Started |
+| 5. Sentiment & Analyst Analysis | ✅ Complete |
+| 6. Macro News Dashboard | ✅ Complete |
+| 7. AI Thesis Generation | ⬜ Not Started |
+| 8. Earnings + Options | ⬜ Not Started |
+| 9. Polish & Deployment | ⬜ Not Started |
 
 **Legend:** ✅ Complete · 🔵 In Progress · ⬜ Not Started
 
@@ -31,8 +33,8 @@ Built as a single Next.js deployment with zero recurring cost as the overriding 
 - **Charts:** Recharts
 - **Hosting:** Vercel free tier
 - **Market data:** Yahoo Finance v8/v10 REST API (no Python, no `yfinance`)
-- **Sentiment data:** Reddit OAuth HTTP API + StockTwits API (no PRAW, no Twitter/X)
-- **AI/LLM:** Groq (Llama 3.3 70B) for portfolio summaries; Gemini (Flash latest) for news summaries and thesis generation
+- **Sentiment data:** Adanos API (Reddit + Twitter/X sentiment, multi-key round-robin) + Reddit RSS fallback
+- **AI/LLM:** Groq (Llama 3.3 70B) for portfolio summaries and sentiment; Gemini (Flash Lite) for news summaries, thesis generation, and macro analysis
 
 ### Constraints
 
@@ -87,23 +89,23 @@ Track tickers of interest with earnings visibility, plus live-updating dashboard
 - [x] Market status indicator (open/closed/pre-market) — from Phase 4
 - [x] Auto-add portfolio positions to watchlist on creation
 - [x] Earnings calendar visualization (3-month grid with ticker badges)
-- [ ] Earnings beat/miss tracking after results
+- [ ] Earnings beat/miss tracking after results — moved to Phase 8
 
 ---
 
 ## Phase 4 — ~~Real-Time Dashboard Features~~ (Merged into Phase 3)
 
-Auto-refresh and market status merged into Phase 3. Notifications and layout improvements moved to Phase 7.
+Auto-refresh and market status merged into Phase 3. Notifications and layout improvements moved to Phase 9.
 
 - [x] Auto-refresh quotes (60s polling, visibility-aware) — merged into Phase 3
 - [x] Real-time P&L updates (derived from auto-refreshed quotes) — merged into Phase 3
 - [x] Market status indicator (open/closed/pre-market) — merged into Phase 3
-- [ ] Notifications for significant price movements — moved to Phase 7
-- [ ] Dashboard layout improvements — moved to Phase 7
+- [ ] Notifications for significant price movements — moved to Phase 9
+- [ ] Dashboard layout improvements — moved to Phase 9
 
 ---
 
-## Phase 5 — Sentiment & Analyst Analysis 🔵 In Progress
+## Phase 5 — Sentiment & Analyst Analysis ✅ Complete
 
 Dual-lens view: retail sentiment from social media vs. Wall Street analyst consensus. Plus AI-summarized news per ticker.
 
@@ -113,10 +115,10 @@ Dual-lens view: retail sentiment from social media vs. Wall Street analyst conse
 - [x] Analyst vs. sentiment comparison visualization
 
 **Social media sentiment:**
-- [ ] Reddit OAuth HTTP API integration (no PRAW — all Node.js `fetch`)
-- [x] StockTwits API integration
+- [x] Adanos API integration (Reddit + Twitter/X sentiment, multi-key round-robin)
+- [x] Reddit RSS fallback sentiment source
 - [x] Sentiment scoring per ticker
-- [ ] Sentiment trend visualization
+- [x] AI-powered retail vs institutional sentiment comparison (Groq)
 
 **News summaries:**
 - [x] Aggregate recent news articles per watchlist ticker (Yahoo Finance search API)
@@ -128,13 +130,24 @@ Dual-lens view: retail sentiment from social media vs. Wall Street analyst conse
 - [x] Three-tab detail view (Overview, News, Sentiment)
 - [x] Overview: analyst consensus meter + next earnings card
 - [x] News: AI cited summary with inline source links
-- [x] Sentiment: StockTwits sentiment bar + analyst vs. retail comparison
-
-> **Note:** Twitter/X is explicitly excluded as a sentiment source.
+- [x] Sentiment: social sentiment bar + analyst vs. retail comparison
 
 ---
 
-## Phase 6 — AI Thesis Generation ⬜ Not Started
+## Phase 6 — Macro News Dashboard ✅ Complete
+
+Cross-market macro outlook powered by RSS feeds and AI synthesis.
+
+- [x] RSS feed aggregation (Federal Reserve, Geopolitics, Commodities, Jobs, Government)
+- [x] AI-powered per-category summaries + cross-category macro outlook (Gemini Flash Lite)
+- [x] Shared cross-user cache (NULL user_id + partial unique index)
+- [x] Per-user section preferences (add/remove categories, persisted in DB)
+- [x] 1-hour cache TTL with 48-hour article window
+- [x] Macro Dashboard page with collapsible category sections
+
+---
+
+## Phase 7 — AI Thesis Generation ⬜ Not Started
 
 LLM-generated investment framing per position, layered on top of Phase 5 sentiment data.
 
@@ -146,7 +159,19 @@ LLM-generated investment framing per position, layered on top of Phase 5 sentime
 
 ---
 
-## Phase 7 — Polish & Deployment ⬜ Not Started
+## Phase 8 — Earnings + Options ⬜ Not Started
+
+Earnings tracking bundled with options-derived investor expectations (see Decision 51).
+
+- [ ] Earnings calendar with beat/miss tracking for Watchlist tickers
+- [ ] Historical earnings surprise trends per ticker
+- [ ] Options-derived expected move vs actual move comparison
+- [ ] IV crush visualization (pre-earnings IV vs post-earnings IV)
+- [ ] Integration with Watchlist — only tracks tickers the user cares about
+
+---
+
+## Phase 9 — Polish & Deployment ⬜ Not Started
 
 Production-readiness pass before treating the app as "done."
 
@@ -157,6 +182,8 @@ Production-readiness pass before treating the app as "done."
 - [ ] Production Vercel deployment
 - [ ] User settings page
 - [ ] Export portfolio data (CSV)
+- [ ] Notifications for significant price movements (from Phase 4)
+- [ ] Dashboard layout improvements (from Phase 4)
 
 ---
 
