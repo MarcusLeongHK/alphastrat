@@ -1,4 +1,4 @@
-import { QuoteData, HistoricalBar, EarningsData, AnalystData, NewsArticle, RecommendationTrend, RecommendationPeriod } from "./types";
+import { QuoteData, HistoricalBar, EarningsData, AnalystData, NewsArticle, RecommendationTrend, RecommendationPeriod, TickerFundamentals } from "./types";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -467,6 +467,118 @@ export async function getRecommendationTrend(ticker: string): Promise<Recommenda
     }));
 
     return { ticker, trend };
+  } catch {
+    return empty;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function extractFundamentals(ticker: string, result: any): TickerFundamentals {
+  const profile = result?.summaryProfile;
+  const keyStats = result?.defaultKeyStatistics;
+  const financial = result?.financialData;
+  const summary = result?.summaryDetail;
+  const ehRaw = result?.earningsHistory?.history ?? [];
+  const incomeRaw = result?.incomeStatementHistory?.incomeStatementHistory ?? [];
+  const cashRaw = result?.cashflowStatementHistory?.cashflowStatements ?? [];
+
+  return {
+    ticker,
+    sector: profile?.sector ?? null,
+    industry: profile?.industry ?? null,
+    employees: profile?.fullTimeEmployees ?? null,
+    description: profile?.longBusinessSummary ?? null,
+    marketCap: summary?.marketCap?.raw ?? null,
+    enterpriseValue: keyStats?.enterpriseValue?.raw ?? null,
+    trailingPE: summary?.trailingPE?.raw ?? null,
+    forwardPE: keyStats?.forwardPE?.raw ?? null,
+    pegRatio: keyStats?.pegRatio?.raw ?? null,
+    priceToBook: keyStats?.priceToBook?.raw ?? null,
+    priceToSales: keyStats?.priceToSalesTrailing12Months?.raw ?? null,
+    currentPrice: financial?.currentPrice?.raw ?? null,
+    fiftyTwoWeekHigh: keyStats?.fiftyTwoWeekHigh?.raw ?? null,
+    fiftyTwoWeekLow: keyStats?.fiftyTwoWeekLow?.raw ?? null,
+    beta: keyStats?.beta?.raw ?? null,
+    grossMargins: financial?.grossMargins?.raw ?? null,
+    operatingMargins: financial?.operatingMargins?.raw ?? null,
+    profitMargins: financial?.profitMargins?.raw ?? null,
+    returnOnEquity: financial?.returnOnEquity?.raw ?? null,
+    returnOnAssets: financial?.returnOnAssets?.raw ?? null,
+    revenueGrowth: financial?.revenueGrowth?.raw ?? null,
+    earningsGrowth: financial?.earningsGrowth?.raw ?? null,
+    totalCash: financial?.totalCash?.raw ?? null,
+    totalDebt: financial?.totalDebt?.raw ?? null,
+    debtToEquity: financial?.debtToEquity?.raw ?? null,
+    currentRatio: financial?.currentRatio?.raw ?? null,
+    freeCashFlow: financial?.freeCashFlow?.raw ?? null,
+    operatingCashFlow: financial?.operatingCashflow?.raw ?? null,
+    shortPercentOfFloat: keyStats?.shortPercentOfFloat?.raw ?? null,
+    sharesShort: keyStats?.sharesShort?.raw ?? null,
+    recommendationKey: financial?.recommendationKey ?? null,
+    targetMeanPrice: financial?.targetMeanPrice?.raw ?? null,
+    targetHighPrice: financial?.targetHighPrice?.raw ?? null,
+    targetLowPrice: financial?.targetLowPrice?.raw ?? null,
+    numberOfAnalysts: financial?.numberOfAnalystOpinions?.raw ?? null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    earningsHistory: ehRaw.map((e: any) => ({
+      quarter: e.quarter?.fmt ?? "",
+      epsActual: e.epsActual?.raw ?? null,
+      epsEstimate: e.epsEstimate?.raw ?? null,
+      surprisePercent: e.surprisePercent?.raw ?? null,
+    })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    quarterlyRevenue: incomeRaw.map((s: any) => ({
+      quarter: s.endDate?.fmt ?? "",
+      revenue: s.totalRevenue?.raw ?? null,
+      netIncome: s.netIncome?.raw ?? null,
+    })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    quarterlyCashFlow: cashRaw.map((c: any) => ({
+      quarter: c.endDate?.fmt ?? "",
+      operatingCashFlow: c.totalCashFromOperatingActivities?.raw ?? null,
+      capitalExpenditures: c.capitalExpenditures?.raw ?? null,
+      freeCashFlow: c.freeCashFlow?.raw ?? null,
+    })),
+  };
+}
+
+export async function getTickerFundamentals(ticker: string): Promise<TickerFundamentals> {
+  const empty = extractFundamentals(ticker, {});
+
+  try {
+    const auth = await getYahooCrumb();
+    if (!auth) return empty;
+
+    const modules = [
+      "defaultKeyStatistics",
+      "financialData",
+      "summaryDetail",
+      "summaryProfile",
+      "earningsHistory",
+      "incomeStatementHistory",
+      "cashflowStatementHistory",
+    ].join(",");
+
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(
+      ticker
+    )}?modules=${modules}&crumb=${encodeURIComponent(auth.crumb)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Cookie: auth.cookie,
+      },
+    });
+
+    if (!response.ok) return empty;
+
+    const json = (await response.json()) as YahooQuoteSummaryResponse;
+    if (json.quoteSummary.error) return empty;
+
+    const result = json.quoteSummary.result?.[0];
+    if (!result) return empty;
+
+    return extractFundamentals(ticker, result);
   } catch {
     return empty;
   }
