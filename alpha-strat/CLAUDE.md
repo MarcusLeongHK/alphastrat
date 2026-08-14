@@ -17,6 +17,7 @@
 - Reddit RSS as fallback sentiment source
 - Generic cache utility: `lib/cache/index.ts` → `getOrFetch<T>()` with `user_id` + composite upsert
 - Cache table with `user_id`, `cache_key`, `cache_type`, `data` (jsonb), `expires_at` — unique on `(user_id, cache_key)`
+- Shared cache: `getOrFetch<T>(..., { shared: true })` uses `user_id IS NULL` + partial unique index for cross-user caching (e.g., macro news)
 - Pure financial calculation functions in `lib/finance/` — all unit tested
 - Server Actions for mutations, API Routes for data fetching
 - `cookies()` is async in Next.js 16
@@ -60,12 +61,18 @@
 - `app/api/market/news/route.ts` — news + AI summary per ticker
 - `app/api/market/sentiment/route.ts` — analyst recommendation trend data
 - `app/api/market/reddit-sentiment/route.ts` — social sentiment (Adanos Reddit + Twitter, cached 24hr)
+- `lib/market/rss.ts` — RSS feed fetcher for macro news (Fed, geopolitics, commodities, jobs, government)
+- `lib/ai/macro-summary.ts` — Gemini-powered per-category + cross-category macro synthesis
+- `app/api/macro/news/route.ts` — macro news API (shared cache, 1hr TTL)
+- `app/api/macro/preferences/route.ts` — per-user section preferences CRUD
+- `app/macro/page.tsx` + `macro-dashboard.tsx` — Macro Dashboard UI with section customization
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)
 - `transactions` — user_id, position_id, ticker, type, quantity, price_per_share, transacted_at
 - `cache` — generic cache with jsonb data and expiry
 - `watchlist` — user_id, ticker, added_at (unique per user+ticker)
+- `macro_preferences` — user_id (unique), enabled_sections (text[]), updated_at — per-user section visibility
 
 ## Commands
 - `npm run dev` — start dev server (port 3000)

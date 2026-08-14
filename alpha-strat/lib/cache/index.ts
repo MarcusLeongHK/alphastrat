@@ -11,9 +11,10 @@ export async function getOrFetch<T>(
   cacheType: string,
   ttlSeconds: number,
   fetcher: () => Promise<T>,
-  options?: { shouldCache?: (data: T) => boolean }
+  options?: { shouldCache?: (data: T) => boolean; shared?: boolean }
 ): Promise<{ data: T; fromCache: boolean }> {
-  const userId = await getUserId(supabase);
+  const isShared = options?.shared ?? false;
+  const userId = isShared ? null : await getUserId(supabase);
 
   try {
     const query = supabase
@@ -22,7 +23,9 @@ export async function getOrFetch<T>(
       .eq("cache_key", cacheKey)
       .gt("expires_at", new Date().toISOString());
 
-    if (userId) {
+    if (isShared) {
+      query.is("user_id", null);
+    } else if (userId) {
       query.eq("user_id", userId);
     }
 
@@ -39,19 +42,39 @@ export async function getOrFetch<T>(
 
   if (shouldCache) {
     try {
-      const { error: upsertError } = await supabase.from("cache").upsert(
-        {
+      if (isShared) {
+        await supabase
+          .from("cache")
+          .delete()
+          .eq("cache_key", cacheKey)
+          .is("user_id", null);
+
+        const { error: insertError } = await supabase.from("cache").insert({
           cache_key: cacheKey,
           cache_type: cacheType,
           data: freshData,
-          user_id: userId,
+          user_id: null,
           fetched_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
-        },
-        { onConflict: "user_id,cache_key" }
-      );
-      if (upsertError) {
-        console.warn(`[cache] upsert failed for ${cacheKey}:`, upsertError.message);
+        });
+        if (insertError) {
+          console.warn(`[cache] shared insert failed for ${cacheKey}:`, insertError.message);
+        }
+      } else {
+        const { error: upsertError } = await supabase.from("cache").upsert(
+          {
+            cache_key: cacheKey,
+            cache_type: cacheType,
+            data: freshData,
+            user_id: userId,
+            fetched_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+          },
+          { onConflict: "user_id,cache_key" }
+        );
+        if (upsertError) {
+          console.warn(`[cache] upsert failed for ${cacheKey}:`, upsertError.message);
+        }
       }
     } catch (err) {
       console.warn(`[cache] upsert threw for ${cacheKey}:`, err instanceof Error ? err.message : err);
