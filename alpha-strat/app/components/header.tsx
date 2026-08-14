@@ -28,6 +28,12 @@ export async function Header() {
                 Watchlist
               </Link>
               <Link
+                href="/macro"
+                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                Macro
+              </Link>
+              <Link
                 href="/portfolio"
                 className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
               >
