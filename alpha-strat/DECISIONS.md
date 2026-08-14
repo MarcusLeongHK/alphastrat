@@ -963,4 +963,19 @@ Every significant architecture and implementation decision, with the options con
 
 **Status:** Conceptual. No implementation work started. Detailed spec will be written during Phase 8 planning.
 
+---
+
+## Decision 52: AI Thesis Generation — Fundamentals-Driven with Shared Cache
+
+**Date:** Phase 7 (2026-08-14)
+
+**Options considered:**
+1. **Pre-generate theses for all watchlist tickers** — background job on page load
+2. **On-demand generation with per-user cache** — generate when clicked, cached per user
+3. **On-demand generation with shared cache** — generate when clicked, shared across all users
+
+**Decision:** On-demand generation with shared 7-day cache via `getOrFetch<T>({ shared: true })`
+
+**Reasoning:** Fundamental data and AI-generated theses are ticker-specific, not user-specific — every user viewing AAPL gets the same P/E, margins, and FCF data, so the thesis is identical. Shared caching means the first user to view a ticker pays the generation cost (one Yahoo Finance fetch + one Gemini call), and all subsequent users get an instant cache hit. 7-day TTL matches the pace of fundamental data changes — quarterly earnings are the primary catalyst, and a refresh button provides an escape hatch. On-demand generation avoids wasting Gemini API calls on tickers nobody expands, which matters for the free tier's rate limits. The fundamentals fetcher consolidates 7 Yahoo Finance `quoteSummary` modules into a single request, minimizing network overhead.
+
 *This log will be updated as new decisions are made in Phases 6-8.*
