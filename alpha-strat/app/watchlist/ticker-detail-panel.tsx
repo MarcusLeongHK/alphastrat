@@ -369,6 +369,10 @@ export function TickerDetailPanel({
     setThesisRefreshing(false);
   }
 
+  useEffect(() => {
+    refreshTickerRef.current = ticker;
+  }, [ticker]);
+
   const newsLoading = !newsFetched;
   const sentimentLoading = !sentimentFetched;
   const socialLoading = !socialFetched;
@@ -487,6 +491,7 @@ export function TickerDetailPanel({
       .then((data) => {
         if (refreshTickerRef.current === refreshTicker) {
           setThesisData(data);
+          setThesisFetched(true);
           setThesisRefreshing(false);
         }
       })
