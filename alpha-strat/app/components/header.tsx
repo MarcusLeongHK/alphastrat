@@ -22,16 +22,16 @@ export async function Header() {
           {user ? (
             <>
               <Link
-                href="/portfolio"
-                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-              >
-                Portfolio
-              </Link>
-              <Link
                 href="/watchlist"
                 className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
               >
                 Watchlist
+              </Link>
+              <Link
+                href="/portfolio"
+                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                Portfolio
               </Link>
               <MarketStatus />
               <span className="text-sm text-zinc-500 dark:text-zinc-400">
