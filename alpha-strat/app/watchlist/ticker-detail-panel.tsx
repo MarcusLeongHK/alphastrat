@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import type {
   AnalystData,
   EarningsData,
@@ -355,7 +355,9 @@ export function TickerDetailPanel({
   const [thesisData, setThesisData] = useState<ThesisData | null>(null);
   const [thesisFetched, setThesisFetched] = useState(false);
   const [thesisError, setThesisError] = useState(false);
+  const [thesisRefreshing, setThesisRefreshing] = useState(false);
   const [prevTicker, setPrevTicker] = useState(ticker);
+  const refreshTickerRef = useRef(ticker);
 
   if (ticker !== prevTicker) {
     setPrevTicker(ticker);
@@ -364,6 +366,7 @@ export function TickerDetailPanel({
     setThesisData(null);
     setThesisFetched(false);
     setThesisError(false);
+    setThesisRefreshing(false);
   }
 
   const newsLoading = !newsFetched;
@@ -471,22 +474,27 @@ export function TickerDetailPanel({
   }, [ticker, activeTab, thesisFetched]);
 
   const handleThesisRefresh = useCallback(() => {
-    setThesisData(null);
-    setThesisFetched(false);
+    const refreshTicker = ticker;
+    refreshTickerRef.current = refreshTicker;
+    setThesisRefreshing(true);
     setThesisError(false);
 
-    fetch(`/api/market/thesis?ticker=${ticker}&refresh=true`)
+    fetch(`/api/market/thesis?ticker=${refreshTicker}&refresh=true`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<ThesisData>;
       })
       .then((data) => {
-        setThesisData(data);
-        setThesisFetched(true);
+        if (refreshTickerRef.current === refreshTicker) {
+          setThesisData(data);
+          setThesisRefreshing(false);
+        }
       })
       .catch(() => {
-        setThesisError(true);
-        setThesisFetched(true);
+        if (refreshTickerRef.current === refreshTicker) {
+          setThesisError(true);
+          setThesisRefreshing(false);
+        }
       });
   }, [ticker]);
 
@@ -895,7 +903,7 @@ export function TickerDetailPanel({
 
       {activeTab === "thesis" && (
         <div className="flex flex-col gap-4">
-          {thesisLoading ? (
+          {thesisLoading || thesisRefreshing ? (
             <div className="flex flex-col items-center gap-3 py-8">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
               <p className="text-xs text-zinc-400">Generating thesis...</p>
