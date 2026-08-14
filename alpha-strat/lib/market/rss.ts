@@ -32,6 +32,18 @@ function commodityFilter(title: string): boolean {
   return COMMODITY_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+export const JOBS_KEYWORDS = [
+  "jobs", "employment", "unemployment", "labor", "labour",
+  "payroll", "hiring", "workforce", "wage", "wages",
+  "nonfarm", "jobless", "cpi", "inflation", "gdp",
+  "recession", "economic data", "consumer spending",
+];
+
+function jobsFilter(title: string): boolean {
+  const lower = title.toLowerCase();
+  return JOBS_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 export const FEED_CONFIG: FeedConfig[] = [
   {
     id: "fed",
@@ -41,26 +53,27 @@ export const FEED_CONFIG: FeedConfig[] = [
   {
     id: "geopolitics",
     label: "Geopolitics",
-    urls: ["https://feeds.reuters.com/Reuters/worldNews"],
+    urls: [
+      "https://www.aljazeera.com/xml/rss/all.xml",
+      "https://feeds.bbci.co.uk/news/world/rss.xml",
+    ],
   },
   {
     id: "commodities",
     label: "Commodities",
-    urls: ["https://feeds.reuters.com/reuters/businessNews"],
-    filter: commodityFilter,
+    urls: ["https://oilprice.com/rss/main"],
   },
   {
     id: "jobs",
     label: "Jobs & Economic Data",
-    urls: ["https://www.bls.gov/feed/bls_latest.rss"],
+    urls: [
+      "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+    ],
   },
   {
     id: "government",
     label: "US Government",
-    urls: [
-      "https://www.whitehouse.gov/feed/",
-      "https://home.treasury.gov/system/files/136/Treasury-RSS.xml",
-    ],
+    urls: ["https://www.whitehouse.gov/wire/feed/"],
   },
 ];
 

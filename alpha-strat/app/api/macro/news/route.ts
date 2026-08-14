@@ -44,6 +44,7 @@ export async function GET() {
       {
         shouldCache: (result) =>
           result.categories.some((c) => c.articles.length > 0),
+        shared: true,
       }
     );
 

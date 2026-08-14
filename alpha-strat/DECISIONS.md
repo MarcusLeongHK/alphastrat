@@ -837,4 +837,130 @@ Every significant architecture and implementation decision, with the options con
 
 ---
 
-*This log will be updated as new decisions are made in Phases 6-7.*
+## Decision 46: Macro News Dashboard — RSS Feed Aggregation vs. News APIs
+
+**Date:** Phase 6 (2026-08-14)
+
+**Context:** The macro dashboard needs real-time-ish news from 5 categories: Federal Reserve, Geopolitics, Commodities, Jobs/Economic Data, and US Government. Unlike per-ticker news (which uses Yahoo Finance's news endpoint), macro news spans entire sectors and policy domains.
+
+**Options considered:**
+1. **RSS feed aggregation** — free XML feeds from authoritative sources (Fed, Al Jazeera, BBC, OilPrice, MarketWatch, White House)
+2. **News API (newsapi.org, GNews)** — search-based news APIs with free tiers
+3. **Web scraping** — parse HTML from news sites directly
+4. **Social media feeds** — aggregate from Twitter/X financial accounts
+
+**Pros/cons:**
+
+| Option | Pros | Cons |
+|--------|------|------|
+| RSS feeds | Free, no auth needed, authoritative sources, well-structured XML, `rss-parser` npm package handles parsing | Not all sources have RSS; feeds can break or go offline; limited to what each source publishes |
+| News API | Search-based (flexible categories), structured JSON | Free tiers have severe limits (100 req/day for newsapi.org); rate limits burn fast with 5 categories |
+| Web scraping | Can get any content | Fragile (HTML changes break scrapers), potential legal issues, heavy maintenance |
+| Social media | Real-time, opinionated takes | Twitter API is $100/month minimum; noise-to-signal ratio is poor for macro analysis |
+
+**Decision:** RSS feed aggregation with `Promise.allSettled` for graceful degradation
+
+**Feed selection:**
+- Federal Reserve: `federalreserve.gov/feeds/press_all.xml` (official Fed press releases)
+- Geopolitics: Al Jazeera (`aljazeera.com/xml/rss/all.xml`) + BBC World (`feeds.bbci.co.uk/news/world/rss.xml`)
+- Commodities: OilPrice.com (`oilprice.com/rss/main`) — already commodity-focused, no keyword filter needed
+- Jobs/Economic Data: MarketWatch Top Stories (`feeds.content.dowjones.io/public/rss/mw_topstories`) — broad market coverage includes economic data
+- US Government: White House Wire (`whitehouse.gov/wire/feed/`)
+
+**Reasoning:** RSS is the only option that's both free and authoritative. Government institutions (the Fed, the White House) publish official RSS feeds — no API key, no rate limits, no cost. For geopolitics, Al Jazeera + BBC World provide broad international coverage from two editorially independent sources. OilPrice.com is commodity-focused by nature so no keyword filtering is needed. `Promise.allSettled` means if one feed is down, the other 4 categories still render — graceful degradation rather than all-or-nothing.
+
+**Feed URL discovery process:** The original spec's URLs were largely broken (Reuters discontinued their RSS feeds, BLS returns 403, Treasury returns 404, White House main `/feed/` returns 404). Each URL was tested via `rss-parser` and replaced with a working alternative. This fragility is inherent to RSS — feeds move or die without warning. The working URLs were validated on 2026-08-14.
+
+---
+
+## Decision 47: Macro AI Summaries — Gemini Flash Lite with Cross-Category Synthesis
+
+**Date:** Phase 6 (2026-08-14)
+
+**Options considered:**
+1. **Per-category summaries only** — AI summarizes each category independently
+2. **Cross-category synthesis only** — one macro outlook paragraph
+3. **Both: per-category + cross-category synthesis** — individual summaries plus a macro outlook connecting themes
+
+**Decision:** Both — per-category analysis (4-6 sentences each) + cross-category macro outlook (5-7 sentences)
+
+**Reasoning:** Per-category summaries help users understand "what's happening in commodities" at a glance, while the cross-category macro outlook identifies connections the user might miss — e.g., "rising oil prices + Fed hold signals + weak jobs data = stagflation risk." The macro outlook is the highest-value feature on the page because it's the kind of analysis that typically requires reading across multiple sources and synthesizing. Using Gemini Flash Lite (via the existing `generateCompletion` abstraction from Decision 30) keeps costs near-zero. The prompt instructs the AI to write with conviction, name specific sectors and asset classes, and avoid hedging language — calibrated for "sophisticated investors" per the feedback in `feedback_thesis_quality.md`.
+
+---
+
+## Decision 48: Macro Cache TTL — 1 Hour vs Longer
+
+**Date:** Phase 6 (2026-08-14)
+
+**Options considered:**
+1. **1 hour** — fresh enough for news, conservative on API calls
+2. **4 hours** — match the price cache TTL
+3. **15 minutes** — near-real-time macro updates
+
+**Decision:** 1 hour (`MACRO_TTL = 3600`)
+
+**Reasoning:** Macro news moves faster than portfolio prices — a Fed announcement or geopolitical event can shift markets within minutes. But the dashboard is for analysis, not breaking news alerts. 1 hour balances freshness against cost: each cache miss triggers 6 RSS feed fetches + 1 Gemini API call. At 1 hour, a user checking the dashboard a few times a day gets mostly cached responses (fast, free) with periodic refreshes. The 48-hour article window (filtered in `filterRecentArticles`) ensures the AI always has recent context even if some feeds publish infrequently.
+
+---
+
+## Decision 49: Shared Macro Cache — NULL user_id with Partial Unique Index
+
+**Date:** Phase 6 (2026-08-14)
+
+**Problem:** The macro news dashboard returns the same content for all users (same RSS feeds, same AI summaries). Caching per-user wastes storage and API calls — every user's first visit triggers a fresh RSS+Gemini fetch even though the result is identical.
+
+**Options considered:**
+1. **Sentinel UUID** — use a fixed UUID like `00000000-0000-0000-0000-000000000000` as a "shared" user_id
+2. **NULL user_id with partial unique index** — shared entries have `user_id IS NULL`, per-user entries use their real user_id
+3. **Separate shared_cache table** — a dedicated table without user_id at all
+
+**Decision:** NULL user_id with a partial unique index (`CREATE UNIQUE INDEX cache_shared_key ON cache (cache_key) WHERE user_id IS NULL`)
+
+**Reasoning:** The sentinel UUID approach failed — the `cache` table has a FK constraint on `user_id` referencing `auth.users`, so inserting a non-existent UUID violates the constraint. Discovered this through server error logs after initial deployment. The NULL approach works because PostgreSQL FK constraints with `MATCH SIMPLE` (the default) skip validation for NULL values. The partial unique index ensures one shared entry per cache_key. The `getOrFetch<T>()` utility now accepts `shared: true` — shared reads use `.is("user_id", null)`, shared writes use delete-then-insert (since PostgREST's `onConflict` doesn't support partial index names). A separate table was rejected because it would duplicate the cache schema and require maintaining two cache utilities.
+
+---
+
+## Decision 50: Section Preferences — Per-User Customization with Optimistic UI
+
+**Date:** Phase 6 (2026-08-14)
+
+**Options considered:**
+1. **LocalStorage only** — fast, no API call, but doesn't persist across devices
+2. **Database-backed with `macro_preferences` table** — persists across devices and sessions
+3. **URL query params** — shareable but ugly and ephemeral
+
+**Decision:** Database-backed `macro_preferences` table with RLS + optimistic UI updates
+
+**Implementation:**
+- `macro_preferences` table: `user_id` (unique), `enabled_sections` (text array), `updated_at`
+- RLS policies enforce `auth.uid() = user_id` for all operations
+- Default: all 5 sections enabled (handled in API when no row exists, not via DB default)
+- API route (`/api/macro/preferences`): GET returns enabled sections, PUT validates and upserts
+- UI: gear icon in Macro Outlook header opens a settings panel with checkboxes
+- Optimistic update: UI toggles immediately, rolls back on API failure
+- Guard: cannot uncheck the last remaining section (minimum 1 required)
+
+**Reasoning:** Database persistence was worth the extra table because AlphaStrat is designed to work across devices — a user who customizes on desktop expects the same view on mobile. Optimistic UI avoids the jarring delay of waiting for a round-trip before showing the toggle. The 1-5 section constraint prevents both empty dashboards and unbounded growth if more sections are added later.
+
+---
+
+## Decision 51: Earnings + Options Phase — Bundled as Phase 8
+
+**Date:** Phase 6 (2026-08-14)
+
+**Concept:** A new phase combining an Earnings Page with an Options feature. During earnings season, the page tracks earnings surprises and misses for tickers in the user's Watchlist. Options pricing data (IV, expected moves) tells a complementary story about investor expectations — high IV before earnings implies the market expects a big move, and IV crush after the report reveals whether the move met expectations.
+
+**Why bundle them:** Earnings and options are deeply intertwined during earnings season. Expected moves derived from options pricing directly inform whether an earnings surprise was "priced in." Showing them separately would force users to mentally cross-reference two pages. Together, they answer: "Did the stock beat expectations, and did the market already know?"
+
+**Key features (preliminary):**
+- Earnings calendar with beat/miss tracking for Watchlist tickers
+- Historical earnings surprise trends per ticker
+- Options-derived expected move vs actual move comparison
+- IV crush visualization (pre-earnings IV vs post-earnings IV)
+- Integration with Watchlist — only tracks tickers the user cares about
+
+**Data sources (TBD):** Yahoo Finance earnings data is already partially available (used in the earnings calendar). Options chain data will need a new source — Yahoo Finance has options endpoints but reliability and rate limits need investigation.
+
+**Status:** Conceptual. No implementation work started. Detailed spec will be written during Phase 8 planning.
+
+*This log will be updated as new decisions are made in Phases 6-8.*

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { filterRecentArticles, COMMODITY_KEYWORDS, FEED_CONFIG } from "./rss";
+import { filterRecentArticles, COMMODITY_KEYWORDS, JOBS_KEYWORDS, FEED_CONFIG } from "./rss";
 
 describe("filterRecentArticles", () => {
   it("keeps articles from the last 48 hours", () => {
@@ -31,6 +31,14 @@ describe("COMMODITY_KEYWORDS", () => {
     expect(COMMODITY_KEYWORDS).toContain("crude");
     expect(COMMODITY_KEYWORDS).toContain("gold");
     expect(COMMODITY_KEYWORDS).toContain("wheat");
+  });
+});
+
+describe("JOBS_KEYWORDS", () => {
+  it("includes key terms", () => {
+    expect(JOBS_KEYWORDS).toContain("unemployment");
+    expect(JOBS_KEYWORDS).toContain("cpi");
+    expect(JOBS_KEYWORDS).toContain("gdp");
   });
 });
 

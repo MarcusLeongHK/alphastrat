@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 interface MacroArticle {
   title: string;
@@ -21,6 +21,16 @@ interface MacroNewsResponse {
   macroOutlook: string;
   generatedAt: string;
 }
+
+const ALL_SECTIONS = ["fed", "geopolitics", "commodities", "jobs", "government"];
+
+const SECTION_LABELS: Record<string, string> = {
+  fed: "Federal Reserve",
+  geopolitics: "Geopolitics",
+  commodities: "Commodities",
+  jobs: "Jobs & Economic Data",
+  government: "US Government",
+};
 
 const CATEGORY_STYLES: Record<string, { accent: string; bg: string; badge: string }> = {
   fed: {
@@ -88,9 +98,14 @@ function CategorySkeleton() {
   );
 }
 
+const INITIAL_ARTICLE_COUNT = 5;
+
 function CategorySection({ category }: { category: MacroCategory }) {
   const [expanded, setExpanded] = useState(true);
+  const [showAll, setShowAll] = useState(false);
   const style = CATEGORY_STYLES[category.id] ?? CATEGORY_STYLES.government;
+  const visibleArticles = showAll ? category.articles : category.articles.slice(0, INITIAL_ARTICLE_COUNT);
+  const hasMore = category.articles.length > INITIAL_ARTICLE_COUNT;
 
   return (
     <div className={`rounded-lg border border-zinc-200 border-l-4 ${style.accent} dark:border-zinc-800`}>
@@ -130,26 +145,92 @@ function CategorySection({ category }: { category: MacroCategory }) {
               No recent articles in this category.
             </p>
           ) : (
-            <ul className="space-y-2">
-              {category.articles.map((article, i) => (
-                <li key={i} className="group flex items-start justify-between gap-3">
-                  <a
-                    href={article.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
-                  >
-                    {article.title}
-                  </a>
-                  <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
-                    {timeAgo(article.pubDate)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="space-y-2">
+                {visibleArticles.map((article, i) => (
+                  <li key={i} className="group flex items-start justify-between gap-3">
+                    <a
+                      href={article.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+                    >
+                      {article.title}
+                    </a>
+                    <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                      {timeAgo(article.pubDate)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {hasMore && (
+                <button
+                  onClick={() => setShowAll((v) => !v)}
+                  className="mt-2 text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                >
+                  {showAll ? "Show less" : `Show ${category.articles.length - INITIAL_ARTICLE_COUNT} more`}
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function SectionSettings({
+  enabledSections,
+  onToggle,
+  onClose,
+}: {
+  enabledSections: string[];
+  onToggle: (sectionId: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Customize Sections
+        </h3>
+        <button
+          onClick={onClose}
+          className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div className="space-y-2">
+        {ALL_SECTIONS.map((id) => {
+          const enabled = enabledSections.includes(id);
+          const isLastEnabled = enabled && enabledSections.length === 1;
+          return (
+            <label
+              key={id}
+              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                enabled
+                  ? "bg-zinc-50 text-zinc-900 dark:bg-zinc-700/50 dark:text-zinc-100"
+                  : "text-zinc-400 dark:text-zinc-500"
+              } ${isLastEnabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}
+            >
+              <input
+                type="checkbox"
+                checked={enabled}
+                disabled={isLastEnabled}
+                onChange={() => onToggle(id)}
+                className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 accent-zinc-900 dark:border-zinc-600 dark:accent-zinc-100"
+              />
+              {SECTION_LABELS[id]}
+            </label>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+        At least 1 section required. Max 5.
+      </p>
     </div>
   );
 }
@@ -158,15 +239,24 @@ export function MacroDashboard() {
   const [data, setData] = useState<MacroNewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [enabledSections, setEnabledSections] = useState<string[]>(ALL_SECTIONS);
+  const [showSettings, setShowSettings] = useState(false);
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   useEffect(() => {
-    fetch("/api/macro/news")
-      .then((res) => {
+    Promise.all([
+      fetch("/api/macro/news").then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
-      })
-      .then((json: MacroNewsResponse) => {
-        setData(json);
+      }),
+      fetch("/api/macro/preferences").then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      }),
+    ])
+      .then(([newsJson, prefsJson]: [MacroNewsResponse, { enabledSections: string[] }]) => {
+        setData(newsJson);
+        setEnabledSections(prefsJson.enabledSections);
         setError(null);
       })
       .catch((err) => {
@@ -174,6 +264,33 @@ export function MacroDashboard() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleToggle = useCallback(
+    (sectionId: string) => {
+      if (savingPrefs) return;
+
+      const newSections = enabledSections.includes(sectionId)
+        ? enabledSections.filter((s) => s !== sectionId)
+        : [...enabledSections, sectionId];
+
+      if (newSections.length === 0 || newSections.length > 5) return;
+
+      setEnabledSections(newSections);
+      setSavingPrefs(true);
+
+      fetch("/api/macro/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabledSections: newSections }),
+      })
+        .catch((err) => {
+          console.warn("[macro] failed to save preferences:", err);
+          setEnabledSections(enabledSections);
+        })
+        .finally(() => setSavingPrefs(false));
+    },
+    [enabledSections, savingPrefs]
+  );
 
   if (loading) {
     return (
@@ -196,6 +313,10 @@ export function MacroDashboard() {
 
   if (!data) return null;
 
+  const filteredCategories = data.categories.filter((cat) =>
+    enabledSections.includes(cat.id)
+  );
+
   return (
     <div className="space-y-4">
       {/* Macro Outlook Hero */}
@@ -204,19 +325,44 @@ export function MacroDashboard() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             Macro Outlook
           </h2>
-          {data.generatedAt && (
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              Updated {timeAgo(data.generatedAt)}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {data.generatedAt && (
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                Updated {timeAgo(data.generatedAt)}
+              </span>
+            )}
+            <button
+              onClick={() => setShowSettings((v) => !v)}
+              className={`rounded-md p-1.5 transition-colors ${
+                showSettings
+                  ? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
+                  : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+              }`}
+              title="Customize sections"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
           {data.macroOutlook || "Insufficient data for analysis."}
         </p>
       </div>
 
+      {/* Section Settings Panel */}
+      {showSettings && (
+        <SectionSettings
+          enabledSections={enabledSections}
+          onToggle={handleToggle}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+
       {/* Category Sections */}
-      {data.categories.map((cat) => (
+      {filteredCategories.map((cat) => (
         <CategorySection key={cat.id} category={cat} />
       ))}
     </div>
