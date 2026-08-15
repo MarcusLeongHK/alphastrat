@@ -130,6 +130,14 @@ export interface TickerFundamentals {
     capitalExpenditures: number | null;
     freeCashFlow: number | null;
   }>;
+  earningsTrend: Array<{
+    period: string;
+    epsEstimate: number | null;
+    epsGrowth: number | null;
+    revenueEstimate: number | null;
+    revenueGrowth: number | null;
+  }>;
+  nextEarningsDate: string | null;
 }
 
 export interface ThesisResponse {

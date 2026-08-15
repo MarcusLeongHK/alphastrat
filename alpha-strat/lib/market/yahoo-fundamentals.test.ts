@@ -90,6 +90,35 @@ const mockQuoteSummaryResult = {
       },
     ],
   },
+  earningsTrend: {
+    trend: [
+      {
+        period: "0q",
+        earningsEstimate: { avg: { raw: 1.89 }, growth: { raw: 0.08 } },
+        revenueEstimate: { avg: { raw: 95200000000 }, growth: { raw: 0.05 } },
+      },
+      {
+        period: "+1q",
+        earningsEstimate: { avg: { raw: 2.45 }, growth: { raw: 0.12 } },
+        revenueEstimate: { avg: { raw: 128000000000 }, growth: { raw: 0.07 } },
+      },
+      {
+        period: "0y",
+        earningsEstimate: { avg: { raw: 7.10 }, growth: { raw: 0.10 } },
+        revenueEstimate: { avg: { raw: 410000000000 }, growth: { raw: 0.06 } },
+      },
+      {
+        period: "+1y",
+        earningsEstimate: { avg: { raw: 7.85 }, growth: { raw: 0.11 } },
+        revenueEstimate: { avg: { raw: 445000000000 }, growth: { raw: 0.08 } },
+      },
+    ],
+  },
+  calendarEvents: {
+    earnings: {
+      earningsDate: [{ raw: 1753920000 }],
+    },
+  },
 };
 
 describe("extractFundamentals", () => {
@@ -153,6 +182,24 @@ describe("extractFundamentals", () => {
       capitalExpenditures: -3000000000,
       freeCashFlow: 37000000000,
     });
+
+    expect(result.earningsTrend).toHaveLength(4);
+    expect(result.earningsTrend[0]).toEqual({
+      period: "0q",
+      epsEstimate: 1.89,
+      epsGrowth: 0.08,
+      revenueEstimate: 95200000000,
+      revenueGrowth: 0.05,
+    });
+    expect(result.earningsTrend[1]).toEqual({
+      period: "+1q",
+      epsEstimate: 2.45,
+      epsGrowth: 0.12,
+      revenueEstimate: 128000000000,
+      revenueGrowth: 0.07,
+    });
+
+    expect(result.nextEarningsDate).toBe("2025-07-31");
   });
 
   it("returns nulls for missing modules", () => {
@@ -164,5 +211,7 @@ describe("extractFundamentals", () => {
     expect(result.earningsHistory).toEqual([]);
     expect(result.quarterlyRevenue).toEqual([]);
     expect(result.quarterlyCashFlow).toEqual([]);
+    expect(result.earningsTrend).toEqual([]);
+    expect(result.nextEarningsDate).toBeNull();
   });
 });
