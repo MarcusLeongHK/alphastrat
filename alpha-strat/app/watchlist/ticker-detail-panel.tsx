@@ -1168,7 +1168,7 @@ export function TickerDetailPanel({
                         </div>
                         {(() => {
                           const nextQ = earningsDetail.earningsTrend.find(
-                            (e) => e.period === "+1q"
+                            (e) => e.period === "0q"
                           );
                           if (nextQ?.epsGrowth != null) {
                             const pct = (nextQ.epsGrowth * 100).toFixed(1);
