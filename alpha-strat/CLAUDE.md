@@ -68,6 +68,7 @@
 - `app/macro/page.tsx` + `macro-dashboard.tsx` — Macro Dashboard UI with section customization
 - `lib/ai/thesis.ts` — fundamentals-driven thesis generation (Gemini Flash Lite)
 - `app/api/market/thesis/route.ts` — thesis API route (shared cache, 7d TTL)
+- `app/api/market/earnings-detail/route.ts` — earnings detail API (shared fundamentals cache, 7d TTL)
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)
