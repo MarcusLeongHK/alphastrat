@@ -481,6 +481,9 @@ export function extractFundamentals(ticker: string, result: any): TickerFundamen
   const ehRaw = result?.earningsHistory?.history ?? [];
   const incomeRaw = result?.incomeStatementHistory?.incomeStatementHistory ?? [];
   const cashRaw = result?.cashflowStatementHistory?.cashflowStatements ?? [];
+  const etRaw = result?.earningsTrend?.trend ?? [];
+  const calEarnings = result?.calendarEvents?.earnings;
+  const earningsTimestamp = calEarnings?.earningsDate?.[0]?.raw;
 
   return {
     ticker,
@@ -539,6 +542,18 @@ export function extractFundamentals(ticker: string, result: any): TickerFundamen
       capitalExpenditures: c.capitalExpenditures?.raw ?? null,
       freeCashFlow: c.freeCashFlow?.raw ?? null,
     })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    earningsTrend: etRaw.map((e: any) => ({
+      period: e.period ?? "",
+      epsEstimate: e.earningsEstimate?.avg?.raw ?? null,
+      epsGrowth: e.earningsEstimate?.growth?.raw ?? null,
+      revenueEstimate: e.revenueEstimate?.avg?.raw ?? null,
+      revenueGrowth: e.revenueEstimate?.growth?.raw ?? null,
+    })),
+    nextEarningsDate:
+      earningsTimestamp != null
+        ? new Date(earningsTimestamp * 1000).toISOString().slice(0, 10)
+        : null,
   };
 }
 
@@ -557,6 +572,8 @@ export async function getTickerFundamentals(ticker: string): Promise<TickerFunda
       "earningsHistory",
       "incomeStatementHistory",
       "cashflowStatementHistory",
+      "earningsTrend",
+      "calendarEvents",
     ].join(",");
 
     const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(

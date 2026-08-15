@@ -978,4 +978,19 @@ Every significant architecture and implementation decision, with the options con
 
 **Reasoning:** Fundamental data and AI-generated theses are ticker-specific, not user-specific — every user viewing AAPL gets the same P/E, margins, and FCF data, so the thesis is identical. Shared caching means the first user to view a ticker pays the generation cost (one Yahoo Finance fetch + one Gemini call), and all subsequent users get an instant cache hit. 7-day TTL matches the pace of fundamental data changes — quarterly earnings are the primary catalyst, and a refresh button provides an escape hatch. On-demand generation avoids wasting Gemini API calls on tickers nobody expands, which matters for the free tier's rate limits. The fundamentals fetcher consolidates 7 Yahoo Finance `quoteSummary` modules into a single request, minimizing network overhead.
 
+---
+
+## Decision 53: Earnings Tab — Fundamentals Cache Reuse vs Dedicated Fetch
+
+**Date:** Phase 8a
+
+**Options considered:**
+1. **Reuse thesis cache directly** — read the ThesisResponse from the thesis cache and extract earnings fields
+2. **Separate fundamentals cache (chosen)** — cache TickerFundamentals under its own key `fundamentals-${ticker}`, shared 7-day TTL
+3. **Dedicated earnings-only Yahoo fetch** — separate quoteSummary call with only earnings modules
+
+**Decision:** Option 2 — Separate fundamentals cache
+
+**Reasoning:** The thesis route caches the final AI-generated `ThesisResponse`, not the raw fundamentals. A separate fundamentals cache under `fundamentals-${ticker}` lets the earnings tab reuse the same raw data without depending on thesis generation. The 7-day shared TTL matches thesis since both read the same Yahoo data. Extended `getTickerFundamentals` from 7 to 9 modules (adding `earningsTrend` + `calendarEvents`) — one Yahoo request serves both thesis generation and earnings display. No AI generation needed for this tab: pure data visualization with Recharts.
+
 *This log will be updated as new decisions are made in Phases 6-8.*
