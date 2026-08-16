@@ -445,29 +445,48 @@ function skewColor(direction: string): string {
 const OPTIONS_ANALYSIS_SECTIONS: {
   key: keyof OptionsAnalysisData["analysis"];
   label: string;
+  icon: string;
+  accent: string;
 }[] = [
-  { key: "marketPositioning", label: "Market Positioning" },
-  { key: "expectedMoveAnalysis", label: "Expected Move Analysis" },
-  { key: "volatilityAssessment", label: "Volatility Assessment" },
-  { key: "notableFlow", label: "Notable Flow" },
-  { key: "keyRisksAndCatalysts", label: "Key Risks & Catalysts" },
-  { key: "actionableTakeaway", label: "Actionable Takeaway" },
+  { key: "marketPositioning", label: "Market Positioning", icon: "M3 4h18M3 8h18M3 12h14M3 16h10", accent: "from-blue-500/20 to-blue-500/5 dark:from-blue-500/10 dark:to-blue-500/0" },
+  { key: "expectedMoveAnalysis", label: "Expected Move", icon: "M13 7l5 5-5 5M6 12h12", accent: "from-violet-500/20 to-violet-500/5 dark:from-violet-500/10 dark:to-violet-500/0" },
+  { key: "volatilityAssessment", label: "Volatility", icon: "M3 12l3-3 4 6 4-8 4 6 3-3", accent: "from-amber-500/20 to-amber-500/5 dark:from-amber-500/10 dark:to-amber-500/0" },
+  { key: "notableFlow", label: "Notable Flow", icon: "M12 8c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41", accent: "from-emerald-500/20 to-emerald-500/5 dark:from-emerald-500/10 dark:to-emerald-500/0" },
+  { key: "keyRisksAndCatalysts", label: "Risks & Catalysts", icon: "M12 9v4m0 4h.01M12 2L2 22h20L12 2z", accent: "from-red-500/20 to-red-500/5 dark:from-red-500/10 dark:to-red-500/0" },
+  { key: "actionableTakeaway", label: "Takeaway", icon: "M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z", accent: "from-cyan-500/20 to-cyan-500/5 dark:from-cyan-500/10 dark:to-cyan-500/0" },
 ];
 
 function AnalysisDisclosure({
   label,
   text,
+  icon,
+  accent,
 }: {
   label: string;
   text: string;
+  icon: string;
+  accent: string;
 }) {
   return (
     <details
       open
-      className="group rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+      className={`group overflow-hidden rounded-lg border border-zinc-200 bg-gradient-to-r ${accent} dark:border-zinc-800`}
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-        {label}
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3">
+        <svg
+          className="h-4 w-4 shrink-0 text-zinc-500 dark:text-zinc-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d={icon} />
+        </svg>
+        <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-300">
+          {label}
+        </span>
         <svg
           className="h-3.5 w-3.5 shrink-0 text-zinc-400 transition-transform group-open:rotate-180"
           fill="none"
@@ -478,7 +497,7 @@ function AnalysisDisclosure({
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <p className="mt-2 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+      <p className="px-4 pb-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
         {text}
       </p>
     </details>
@@ -1524,13 +1543,48 @@ export function TickerDetailPanel({
             </p>
           ) : optionsData ? (
             <>
-              {/* Section A: AI Analysis */}
+              {/* Section A: Sentiment Summary + AI Analysis */}
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2.5 w-2.5 rounded-full ${
+                      optionsData.putCallRatio < 0.7
+                        ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+                        : optionsData.putCallRatio > 1.0
+                          ? "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"
+                          : "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                    }`} />
+                    <span className={`text-sm font-semibold ${
+                      optionsData.putCallRatio < 0.7
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : optionsData.putCallRatio > 1.0
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-amber-600 dark:text-amber-400"
+                    }`}>
+                      {optionsData.putCallRatio < 0.7
+                        ? "Bullish Flow"
+                        : optionsData.putCallRatio > 1.0
+                          ? "Bearish Flow"
+                          : "Neutral Flow"}
+                    </span>
+                  </div>
+                  <span className="text-xs text-zinc-400">|</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                    P/C {optionsData.putCallRatio.toFixed(2)} &middot; IV {formatIvPct(optionsData.signals.atmIv)} &middot; HV {formatIvPct(optionsData.signals.historicalVolatility)}
+                  </span>
+                </div>
+                <h4 className="mb-1 text-[10px] font-medium uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                  Options Market Analysis
+                </h4>
+              </div>
               <div className="flex flex-col gap-2">
                 {OPTIONS_ANALYSIS_SECTIONS.map((section) => (
                   <AnalysisDisclosure
                     key={section.key}
                     label={section.label}
                     text={optionsData.analysis[section.key]}
+                    icon={section.icon}
+                    accent={section.accent}
                   />
                 ))}
               </div>
