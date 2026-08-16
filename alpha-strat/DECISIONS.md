@@ -993,4 +993,21 @@ Every significant architecture and implementation decision, with the options con
 
 **Reasoning:** The thesis route caches the final AI-generated `ThesisResponse`, not the raw fundamentals. A separate fundamentals cache under `fundamentals-${ticker}` lets the earnings tab reuse the same raw data without depending on thesis generation. The 7-day shared TTL matches thesis since both read the same Yahoo data. Extended `getTickerFundamentals` from 7 to 9 modules (adding `earningsTrend` + `calendarEvents`) — one Yahoo request serves both thesis generation and earnings display. No AI generation needed for this tab: pure data visualization with Recharts.
 
+---
+
+### Decision 54: Options Tab — Pre-Computed Quant Signals + AI Narrative
+
+**Date:** 2026-08-15
+**Context:** Phase 8b options chain analysis — how to interpret options data for equity analysis
+**Options considered:**
+1. Raw chain → capable AI model (high token cost, model may hallucinate math)
+2. Pre-computed signals → cheap AI model (deterministic math, small prompt, Gemini Lite sufficient)
+3. Hybrid — key signals computed, rest AI-inferred (awkward middle ground)
+
+**Choice:** Option 2 — Pure TypeScript Black-Scholes quant engine computes all signals (pricing, Greeks, IV surface, expected move, put/call ratio, skew, unusual activity, max pain), then Gemini Flash Lite synthesizes the narrative.
+
+**Why:** Intelligence lives in the math and the prompt, not the model. Black-Scholes is well-defined math with known test vectors — fully unit-testable. Pre-computing means smaller prompts (~800 tokens input), lower token cost, and deterministic financial calculations. The AI's job is interpretation — connecting signals to market narrative — which Gemini Lite handles well when given clean structured inputs. Risk-free rate fetched live from Yahoo ^IRX (13-week T-bill), cached 24hr.
+
+**Trade-off:** More TypeScript code to write (Black-Scholes, Greeks, signal derivation), but this code is the most testable and reliable part of the system.
+
 *This log will be updated as new decisions are made in Phases 6-8.*
