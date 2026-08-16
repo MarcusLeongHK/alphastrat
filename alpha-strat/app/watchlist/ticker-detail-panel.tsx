@@ -11,7 +11,10 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Line,
+  LineChart,
   Cell,
+  Legend,
+  ReferenceLine,
 } from "recharts";
 import type {
   AnalystData,
@@ -120,7 +123,50 @@ interface EarningsDetailData {
   nextRevenueEstimate: number | null;
 }
 
-type Tab = "overview" | "news" | "sentiment" | "thesis" | "earnings";
+interface OptionsAnalysisData {
+  ticker: string;
+  underlyingPrice: number;
+  signals: {
+    expectedMove: { dollars: number; percent: number; upperBound: number; lowerBound: number };
+    putCallRatio: number;
+    ivSkew: { direction: string; magnitude: number };
+    maxPain: number;
+    atmIv: number;
+    historicalVolatility: number;
+    unusualActivity: Array<{
+      strike: number;
+      expiry: string;
+      type: string;
+      volume: number;
+      openInterest: number;
+      volumeOiRatio: number;
+    }>;
+    termStructure: Array<{ expiry: string; daysToExpiry: number; atmIv: number }>;
+    greeksSummary: { atmDelta: number; atmGamma: number; atmTheta: number; atmVega: number };
+  };
+  analysis: {
+    marketPositioning: string;
+    expectedMoveAnalysis: string;
+    volatilityAssessment: string;
+    notableFlow: string;
+    keyRisksAndCatalysts: string;
+    actionableTakeaway: string;
+  };
+  ivSurface: Array<{ moneyness: number; iv: number; expiry: string }>;
+  ivTermStructure: Array<{ expiry: string; daysToExpiry: number; atmIv: number }>;
+  positioning: Array<{
+    strike: number;
+    callVolume: number;
+    putVolume: number;
+    callOI: number;
+    putOI: number;
+  }>;
+  expectedMove: { dollars: number; percent: number; upperBound: number; lowerBound: number };
+  maxPain: number;
+  putCallRatio: number;
+}
+
+type Tab = "overview" | "news" | "sentiment" | "thesis" | "earnings" | "options";
 
 function formatUsd(value: number): string {
   return value.toLocaleString(undefined, {
@@ -386,6 +432,59 @@ function thesisRatingBg(rating: string): string {
   return "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/50";
 }
 
+function formatIvPct(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function skewColor(direction: string): string {
+  if (direction === "put-heavy") return "text-red-500";
+  if (direction === "call-heavy") return "text-emerald-500";
+  return "text-zinc-400";
+}
+
+const OPTIONS_ANALYSIS_SECTIONS: {
+  key: keyof OptionsAnalysisData["analysis"];
+  label: string;
+}[] = [
+  { key: "marketPositioning", label: "Market Positioning" },
+  { key: "expectedMoveAnalysis", label: "Expected Move Analysis" },
+  { key: "volatilityAssessment", label: "Volatility Assessment" },
+  { key: "notableFlow", label: "Notable Flow" },
+  { key: "keyRisksAndCatalysts", label: "Key Risks & Catalysts" },
+  { key: "actionableTakeaway", label: "Actionable Takeaway" },
+];
+
+function AnalysisDisclosure({
+  label,
+  text,
+}: {
+  label: string;
+  text: string;
+}) {
+  return (
+    <details
+      open
+      className="group rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        {label}
+        <svg
+          className="h-3.5 w-3.5 shrink-0 text-zinc-400 transition-transform group-open:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+        {text}
+      </p>
+    </details>
+  );
+}
+
 interface TickerDetailPanelProps {
   ticker: string;
   quote: QuoteData | undefined;
@@ -413,6 +512,9 @@ export function TickerDetailPanel({
   const [earningsDetail, setEarningsDetail] = useState<EarningsDetailData | null>(null);
   const [earningsFetched, setEarningsFetched] = useState(false);
   const [earningsError, setEarningsError] = useState(false);
+  const [optionsData, setOptionsData] = useState<OptionsAnalysisData | null>(null);
+  const [optionsFetched, setOptionsFetched] = useState(false);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
   const [prevTicker, setPrevTicker] = useState(ticker);
   const refreshTickerRef = useRef(ticker);
 
@@ -427,6 +529,9 @@ export function TickerDetailPanel({
     setEarningsDetail(null);
     setEarningsFetched(false);
     setEarningsError(false);
+    setOptionsData(null);
+    setOptionsFetched(false);
+    setOptionsError(null);
   }
 
   useEffect(() => {
@@ -438,6 +543,7 @@ export function TickerDetailPanel({
   const socialLoading = !socialFetched;
   const thesisLoading = !thesisFetched;
   const earningsLoading = !earningsFetched;
+  const optionsLoading = !optionsFetched;
 
   useEffect(() => {
     let cancelled = false;
@@ -566,6 +672,34 @@ export function TickerDetailPanel({
     };
   }, [ticker, activeTab, earningsFetched]);
 
+  useEffect(() => {
+    if (activeTab !== "options" || optionsFetched) return;
+
+    let cancelled = false;
+
+    fetch(`/api/market/options-analysis?ticker=${encodeURIComponent(ticker)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<OptionsAnalysisData>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setOptionsData(data);
+          setOptionsFetched(true);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setOptionsError(err instanceof Error ? err.message : String(err));
+          setOptionsFetched(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, optionsFetched, ticker]);
+
   const handleThesisRefresh = useCallback(() => {
     const refreshTicker = ticker;
     refreshTickerRef.current = refreshTicker;
@@ -598,6 +732,7 @@ export function TickerDetailPanel({
     { key: "sentiment", label: "Sentiment" },
     { key: "thesis", label: "Thesis" },
     { key: "earnings", label: "Earnings" },
+    { key: "options", label: "Options" },
   ];
 
   return (
@@ -1364,6 +1499,346 @@ export function TickerDetailPanel({
                 ) : (
                   <p className="py-4 text-center text-xs text-zinc-400">
                     No revenue data available
+                  </p>
+                )}
+              </div>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {activeTab === "options" && (
+        <div className="flex flex-col gap-4">
+          {optionsLoading ? (
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800"
+                />
+              ))}
+            </div>
+          ) : optionsError ? (
+            <p className="py-6 text-center text-xs text-zinc-400">
+              Unable to load options data: {optionsError}
+            </p>
+          ) : optionsData ? (
+            <>
+              {/* Section A: AI Analysis */}
+              <div className="flex flex-col gap-2">
+                {OPTIONS_ANALYSIS_SECTIONS.map((section) => (
+                  <AnalysisDisclosure
+                    key={section.key}
+                    label={section.label}
+                    text={optionsData.analysis[section.key]}
+                  />
+                ))}
+              </div>
+
+              {/* Section B: Expected Move Gauge */}
+              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Expected Move
+                </h4>
+                <div className="mb-2 flex items-baseline justify-between">
+                  <span className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                    ${formatUsd(optionsData.underlyingPrice)}
+                  </span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    &plusmn;${formatUsd(optionsData.expectedMove.dollars)} (
+                    {optionsData.expectedMove.percent.toFixed(1)}%)
+                  </span>
+                </div>
+                {(() => {
+                  const { lowerBound, upperBound } = optionsData.expectedMove;
+                  const spot = optionsData.underlyingPrice;
+                  const maxPain = optionsData.maxPain;
+                  const rangeLow = Math.min(lowerBound, maxPain, spot) * 0.98;
+                  const rangeHigh = Math.max(upperBound, maxPain, spot) * 1.02;
+                  const span = rangeHigh - rangeLow || 1;
+                  const pct = (v: number) =>
+                    Math.min(100, Math.max(0, ((v - rangeLow) / span) * 100));
+                  return (
+                    <div className="relative h-8 w-full">
+                      <div className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                      <div
+                        className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-blue-400/40 dark:bg-blue-500/30"
+                        style={{
+                          left: `${pct(lowerBound)}%`,
+                          width: `${pct(upperBound) - pct(lowerBound)}%`,
+                        }}
+                      />
+                      <div
+                        className="absolute top-0 h-8 w-0.5 bg-zinc-900 dark:bg-zinc-100"
+                        style={{ left: `${pct(spot)}%` }}
+                        title={`Current: $${formatUsd(spot)}`}
+                      />
+                      <div
+                        className="absolute top-0 h-8 w-0.5 border-l border-dashed border-amber-500"
+                        style={{ left: `${pct(maxPain)}%` }}
+                        title={`Max Pain: $${formatUsd(maxPain)}`}
+                      />
+                    </div>
+                  );
+                })()}
+                <div className="mt-1 flex justify-between text-[10px] tabular-nums text-zinc-400 dark:text-zinc-500">
+                  <span>${formatUsd(optionsData.expectedMove.lowerBound)}</span>
+                  <span className="text-amber-500">
+                    Max Pain ${formatUsd(optionsData.maxPain)}
+                  </span>
+                  <span>${formatUsd(optionsData.expectedMove.upperBound)}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+                  <div className="text-center">
+                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                      Put/Call Ratio
+                    </div>
+                    <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                      {optionsData.putCallRatio.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                      ATM IV
+                    </div>
+                    <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                      {formatIvPct(optionsData.signals.atmIv)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                      IV Skew
+                    </div>
+                    <div
+                      className={`text-sm font-medium ${skewColor(optionsData.signals.ivSkew.direction)}`}
+                    >
+                      {optionsData.signals.ivSkew.direction}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section C: IV Surface Chart */}
+              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  IV Surface by Moneyness
+                </h4>
+                {optionsData.ivSurface.length > 0 ? (
+                  (() => {
+                    const expiries = Array.from(
+                      new Set(optionsData.ivSurface.map((p) => p.expiry))
+                    ).sort();
+                    const moneynessValues = Array.from(
+                      new Set(optionsData.ivSurface.map((p) => p.moneyness))
+                    ).sort((a, b) => a - b);
+                    const chartData = moneynessValues.map((moneyness) => {
+                      const row: Record<string, number> = { moneyness };
+                      for (const point of optionsData.ivSurface) {
+                        if (point.moneyness === moneyness) {
+                          row[point.expiry] = point.iv * 100;
+                        }
+                      }
+                      return row;
+                    });
+                    const palette = [
+                      "#6366f1",
+                      "#10b981",
+                      "#f59e0b",
+                      "#ef4444",
+                      "#8b5cf6",
+                      "#06b6d4",
+                    ];
+                    return (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <LineChart
+                          data={chartData}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            vertical={false}
+                            stroke="currentColor"
+                            className="text-zinc-200 dark:text-zinc-700"
+                          />
+                          <XAxis
+                            dataKey="moneyness"
+                            tick={{ fontSize: 11 }}
+                            tickLine={false}
+                            axisLine={false}
+                            className="text-zinc-500"
+                            tickFormatter={(v: number) => `${v > 0 ? "+" : ""}${v}%`}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11 }}
+                            tickLine={false}
+                            axisLine={false}
+                            className="text-zinc-500"
+                            tickFormatter={(v: number) => `${v.toFixed(0)}%`}
+                          />
+                          <RechartsTooltip
+                            contentStyle={{
+                              fontSize: 12,
+                              borderRadius: 8,
+                              border: "1px solid #e4e4e7",
+                            }}
+                            formatter={(value) => [
+                              typeof value === "number" ? `${value.toFixed(1)}%` : "—",
+                              "IV",
+                            ]}
+                            labelFormatter={(label) => `Moneyness: ${label}%`}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 10 }} />
+                          {expiries.map((expiry, i) => (
+                            <Line
+                              key={expiry}
+                              type="monotone"
+                              dataKey={expiry}
+                              stroke={palette[i % palette.length]}
+                              strokeWidth={2}
+                              dot={{ r: 2 }}
+                              connectNulls
+                              name={expiry}
+                            />
+                          ))}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    );
+                  })()
+                ) : (
+                  <p className="py-4 text-center text-xs text-zinc-400">
+                    No IV surface data available
+                  </p>
+                )}
+              </div>
+
+              {/* Section D: IV Term Structure */}
+              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  IV Term Structure
+                </h4>
+                {optionsData.ivTermStructure.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart
+                      data={optionsData.ivTermStructure.map((t) => ({
+                        expiry: t.expiry,
+                        atmIv: t.atmIv * 100,
+                      }))}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="currentColor"
+                        className="text-zinc-200 dark:text-zinc-700"
+                      />
+                      <XAxis
+                        dataKey="expiry"
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        className="text-zinc-500"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        className="text-zinc-500"
+                        tickFormatter={(v: number) => `${v.toFixed(0)}%`}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          fontSize: 12,
+                          borderRadius: 8,
+                          border: "1px solid #e4e4e7",
+                        }}
+                        formatter={(value) => [
+                          typeof value === "number" ? `${value.toFixed(1)}%` : "—",
+                          "ATM IV",
+                        ]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="atmIv"
+                        stroke="#6366f1"
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: "#6366f1" }}
+                        name="atmIv"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-4 text-center text-xs text-zinc-400">
+                    No term structure data available
+                  </p>
+                )}
+              </div>
+
+              {/* Section E: Positioning by Strike */}
+              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Positioning by Strike
+                </h4>
+                {optionsData.positioning.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart
+                      data={optionsData.positioning.map((p) => ({
+                        strike: p.strike,
+                        callVolume: p.callVolume,
+                        putVolume: p.putVolume,
+                      }))}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="currentColor"
+                        className="text-zinc-200 dark:text-zinc-700"
+                      />
+                      <XAxis
+                        dataKey="strike"
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        className="text-zinc-500"
+                        tickFormatter={(v: number) => `$${v}`}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        className="text-zinc-500"
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          fontSize: 12,
+                          borderRadius: 8,
+                          border: "1px solid #e4e4e7",
+                        }}
+                        formatter={(value, name) => [
+                          typeof value === "number" ? value.toLocaleString() : "—",
+                          name === "callVolume" ? "Call Volume" : "Put Volume",
+                        ]}
+                        labelFormatter={(label) => `Strike: $${label}`}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <ReferenceLine
+                        x={optionsData.maxPain}
+                        stroke="#f59e0b"
+                        strokeDasharray="4 4"
+                        label={{
+                          value: "Max Pain",
+                          position: "top",
+                          fontSize: 10,
+                          fill: "#f59e0b",
+                        }}
+                      />
+                      <Bar dataKey="callVolume" fill="#10b981" radius={[2, 2, 0, 0]} name="callVolume" />
+                      <Bar dataKey="putVolume" fill="#ef4444" radius={[2, 2, 0, 0]} name="putVolume" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-4 text-center text-xs text-zinc-400">
+                    No positioning data available
                   </p>
                 )}
               </div>

@@ -69,6 +69,11 @@
 - `lib/ai/thesis.ts` — fundamentals-driven thesis generation (Gemini Flash Lite)
 - `app/api/market/thesis/route.ts` — thesis API route (shared cache, 7d TTL)
 - `app/api/market/earnings-detail/route.ts` — earnings detail API (shared fundamentals cache, 7d TTL)
+- `lib/finance/black-scholes.ts` — Black-Scholes pricing, Greeks, IV solver
+- `lib/finance/options-analysis.ts` — options signal computation (expected move, skew, max pain, etc.)
+- `lib/market/yahoo-options.ts` — Yahoo Finance v7 options chain fetcher + risk-free rate
+- `lib/ai/options-analysis.ts` — Gemini-powered options market narrative
+- `app/api/market/options-analysis/route.ts` — options analysis API (shared cache, 4hr TTL)
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)

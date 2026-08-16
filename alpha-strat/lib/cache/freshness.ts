@@ -6,3 +6,5 @@ export const ANALYST_TTL = 12 * 3600; // 12 hours — analyst ratings change inf
 export const NEWS_TTL = 2 * 3600; // 2 hours — news is time-sensitive
 export const ADANOS_TTL = 24 * 3600; // 24 hours — Adanos free tier is 250 req/month
 export const MACRO_TTL = 3600; // 1 hour — macro news is time-sensitive
+export const OPTIONS_TTL = 4 * 3600; // 4 hours — options data is time-sensitive but not real-time
+export const RFR_TTL = 24 * 3600; // 24 hours — risk-free rate barely moves day-to-day
