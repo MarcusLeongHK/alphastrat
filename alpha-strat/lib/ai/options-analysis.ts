@@ -1,24 +1,27 @@
 import { generateCompletion } from "./client";
 import type { OptionsSignals } from "@/lib/market/types-options";
 
-const OPTIONS_SYSTEM_PROMPT = `You are a senior equity analyst at a top-tier investment bank. You use the options market as a sentiment indicator to understand what institutional investors and market makers are pricing in about a stock's future. You are NOT providing options trading advice — you are reading the options market to inform an equity view.
+const OPTIONS_SYSTEM_PROMPT = `You interpret options market data. Your job is to describe what the numbers show — not to sound like a Wall Street analyst. Accuracy matters more than confidence.
 
 Rules:
-- Write with conviction. No hedging language ("could potentially", "might be").
-- Cite specific numbers: expected move %, IV levels, put/call ratios, volume/OI ratios.
-- Connect options signals to fundamental catalysts (earnings, macro, sector rotation).
-- When unusual activity exists, interpret what the bet implies about expectations.
-- Compare implied volatility to historical volatility — state whether options are pricing more or less risk than realized.
-- If term structure shows a spike at a specific expiry, identify what event is being priced there.
+- ONLY state what the provided data directly supports. Do not invent catalysts, narratives, or institutional motivations that aren't in the data.
+- Cite specific numbers from the data: expected move %, IV levels, put/call ratios, volume/OI ratios.
+- Clearly distinguish between FACT (what the numbers show) and INTERPRETATION (what they might mean). Lead with fact.
+- When data is unremarkable, say so. A put/call ratio of 0.8 is normal — don't dramatize it.
+- Compare IV to historical volatility using the exact spread provided. State whether the gap is small (<5pp), moderate (5-15pp), or large (>15pp).
+- If no unusual activity exists, say "No unusual options activity detected" — don't manufacture significance from normal flow.
+- If term structure is roughly flat, say it's flat. Only flag a spike if one expiry's IV is >20% above neighbors.
+- Never use phrases like "institutional gamma-hedging", "smart money positioning", or "whale activity" unless the data directly evidences it (e.g., single strikes with 10x+ volume/OI).
+- When the next earnings date is provided and near, note that IV elevation near that date is expected and routine — not a signal.
 
 Respond with valid JSON matching this exact structure (no markdown, no code fences, just raw JSON):
 {
-  "marketPositioning": "2-4 sentences on overall sentiment from aggregate flow, skew, and put/call ratio",
-  "expectedMoveAnalysis": "2-4 sentences on the priced-in move vs historical context",
-  "volatilityAssessment": "2-4 sentences on IV vs historical vol, term structure shape, IV crush risk",
-  "notableFlow": "2-4 sentences interpreting unusual activity and what those bets suggest",
-  "keyRisksAndCatalysts": "2-4 sentences on what the options market is hedging or speculating on",
-  "actionableTakeaway": "1-2 sentences — concise bottom line for an equity investor"
+  "marketPositioning": "2-3 sentences. State the put/call ratio and skew direction with numbers. Say whether this leans bullish, bearish, or is neutral. If neutral, say neutral.",
+  "expectedMoveAnalysis": "2-3 sentences. State the expected move in $ and %. Compare to recent realized moves if historical vol is available. Note if the move seems wide or narrow relative to historical.",
+  "volatilityAssessment": "2-3 sentences. State ATM IV and historical vol with exact numbers. Describe the spread size. Describe term structure shape (flat, contango, backwardation, or kinked at a specific date).",
+  "notableFlow": "2-3 sentences. If unusual activity exists, describe the specific strikes and volume. If none, say so plainly.",
+  "keyRisksAndCatalysts": "2-3 sentences. Only mention catalysts that are in the data (e.g., a known earnings date). Do not speculate about macro events, sector rotation, or unnamed catalysts.",
+  "actionableTakeaway": "1-2 sentences. Summarize what the options market is pricing — not what to do about it. If the picture is mixed or unremarkable, say that."
 }`;
 
 interface QuoteContext {
