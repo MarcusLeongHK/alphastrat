@@ -1,7 +1,7 @@
 import type { OptionsContract, OptionsChain, OptionsSnapshot } from "./types-options";
 import { getOrFetch } from "@/lib/cache";
 import { RFR_TTL } from "@/lib/cache/freshness";
-import { getQuote } from "./yahoo";
+import { getQuote, getYahooCrumb } from "./yahoo";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const USER_AGENT =
@@ -71,21 +71,26 @@ function daysUntil(isoDate: string): number {
 
 /**
  * Fetch a single options chain page (one expiry) from the Yahoo Finance v7
- * options endpoint. The v7 endpoint does not require crumb/cookie auth.
+ * options endpoint, authenticated with crumb + cookie.
  */
 export async function getOptionsChain(
   ticker: string,
   expiry?: number
 ): Promise<RawOptionsResponse> {
-  let url = `https://query1.finance.yahoo.com/v7/finance/options/${encodeURIComponent(ticker)}`;
+  const auth = await getYahooCrumb();
+  if (!auth) {
+    throw new Error(`Unable to authenticate with Yahoo Finance for options data`);
+  }
+
+  let url = `https://query1.finance.yahoo.com/v7/finance/options/${encodeURIComponent(ticker)}?crumb=${encodeURIComponent(auth.crumb)}`;
   if (expiry != null) {
-    url += `?date=${expiry}`;
+    url += `&date=${expiry}`;
   }
 
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT },
+      headers: { "User-Agent": USER_AGENT, Cookie: auth.cookie },
     });
   } catch (err) {
     throw new Error(
