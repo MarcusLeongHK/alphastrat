@@ -1591,9 +1591,12 @@ export function TickerDetailPanel({
 
               {/* Section B: Expected Move Gauge */}
               <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   Expected Move
                 </h4>
+                <p className="mb-3 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+                  The price range the options market expects for the nearest expiry, derived from the ATM straddle price. The solid line is the current price; the shaded band is the expected range. The dashed line marks max pain — the strike where option sellers lose the least.
+                </p>
                 <div className="mb-2 flex items-baseline justify-between">
                   <span className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
                     ${formatUsd(optionsData.underlyingPrice)}
@@ -1650,6 +1653,9 @@ export function TickerDetailPanel({
                     <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
                       {optionsData.putCallRatio.toFixed(2)}
                     </div>
+                    <div className="mt-0.5 text-[9px] text-zinc-400 dark:text-zinc-600">
+                      {optionsData.putCallRatio < 0.7 ? "Bullish (<0.7)" : optionsData.putCallRatio > 1.0 ? "Bearish (>1.0)" : "Neutral"}
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
@@ -1657,6 +1663,9 @@ export function TickerDetailPanel({
                     </div>
                     <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
                       {formatIvPct(optionsData.signals.atmIv)}
+                    </div>
+                    <div className="mt-0.5 text-[9px] text-zinc-400 dark:text-zinc-600">
+                      vs {formatIvPct(optionsData.signals.historicalVolatility)} realized
                     </div>
                   </div>
                   <div className="text-center">
@@ -1668,15 +1677,21 @@ export function TickerDetailPanel({
                     >
                       {optionsData.signals.ivSkew.direction}
                     </div>
+                    <div className="mt-0.5 text-[9px] text-zinc-400 dark:text-zinc-600">
+                      {optionsData.signals.ivSkew.direction === "put-heavy" ? "Downside protection bid" : optionsData.signals.ivSkew.direction === "call-heavy" ? "Upside demand bid" : "Balanced demand"}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Section C: IV Surface Chart */}
               <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   IV Surface by Moneyness
                 </h4>
+                <p className="mb-3 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+                  Implied volatility across strike prices for each expiry. The x-axis shows how far a strike is from the current price (negative = below, positive = above). A &ldquo;smile&rdquo; shape means the market prices higher volatility for large moves in either direction. Steeper on the left suggests more demand for downside protection.
+                </p>
                 {optionsData.ivSurface.length > 0 ? (
                   (() => {
                     const expiries = Array.from(
@@ -1767,9 +1782,12 @@ export function TickerDetailPanel({
 
               {/* Section D: IV Term Structure */}
               <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   IV Term Structure
                 </h4>
+                <p className="mb-3 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+                  How implied volatility changes across expiry dates. A rising curve (contango) is normal — longer time horizons carry more uncertainty. A falling or kinked curve signals the market expects a near-term event (e.g. earnings) to cause outsized moves.
+                </p>
                 {optionsData.ivTermStructure.length > 0 ? (
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart
@@ -1829,9 +1847,12 @@ export function TickerDetailPanel({
 
               {/* Section E: Positioning by Strike */}
               <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   Positioning by Strike
                 </h4>
+                <p className="mb-3 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+                  Trading volume by strike price for the nearest expiry. Green bars are call (bullish) volume, red bars are put (bearish) volume. Tall bars indicate strikes where traders are concentrating bets. The dashed line marks max pain — the price at which the most options expire worthless.
+                </p>
                 {optionsData.positioning.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
