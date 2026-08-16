@@ -125,22 +125,34 @@ export async function generateOptionsAnalysis(
 ): Promise<OptionsAnalysisText> {
   const userPrompt = formatSignalsForPrompt(ticker, signals, quote, fundamentals);
 
-  const raw = await generateCompletion(
-    OPTIONS_SYSTEM_PROMPT,
-    userPrompt,
-    "gemini"
-  );
+  try {
+    const raw = await generateCompletion(
+      OPTIONS_SYSTEM_PROMPT,
+      userPrompt,
+      "gemini"
+    );
 
-  const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
-  const parsed = JSON.parse(cleaned) as OptionsAnalysisText;
+    const parsed = JSON.parse(cleaned) as OptionsAnalysisText;
 
-  return {
-    marketPositioning: parsed.marketPositioning ?? "",
-    expectedMoveAnalysis: parsed.expectedMoveAnalysis ?? "",
-    volatilityAssessment: parsed.volatilityAssessment ?? "",
-    notableFlow: parsed.notableFlow ?? "",
-    keyRisksAndCatalysts: parsed.keyRisksAndCatalysts ?? "",
-    actionableTakeaway: parsed.actionableTakeaway ?? "",
-  };
+    return {
+      marketPositioning: parsed.marketPositioning ?? "",
+      expectedMoveAnalysis: parsed.expectedMoveAnalysis ?? "",
+      volatilityAssessment: parsed.volatilityAssessment ?? "",
+      notableFlow: parsed.notableFlow ?? "",
+      keyRisksAndCatalysts: parsed.keyRisksAndCatalysts ?? "",
+      actionableTakeaway: parsed.actionableTakeaway ?? "",
+    };
+  } catch {
+    const fallback = "Unable to generate options analysis. Please try refreshing.";
+    return {
+      marketPositioning: fallback,
+      expectedMoveAnalysis: fallback,
+      volatilityAssessment: fallback,
+      notableFlow: fallback,
+      keyRisksAndCatalysts: fallback,
+      actionableTakeaway: fallback,
+    };
+  }
 }
