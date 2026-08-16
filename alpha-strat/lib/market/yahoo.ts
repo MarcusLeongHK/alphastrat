@@ -227,7 +227,7 @@ interface YahooQuoteSummaryResponse {
 let cachedCrumb: { crumb: string; cookie: string; expiresAt: number } | null =
   null;
 
-async function getYahooCrumb(): Promise<{
+export async function getYahooCrumb(): Promise<{
   crumb: string;
   cookie: string;
 } | null> {
