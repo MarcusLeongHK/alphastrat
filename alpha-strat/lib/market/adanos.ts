@@ -287,8 +287,58 @@ export async function getAdanosPolymarketSentiment(
 export function getAvailableSources(): string[] {
   const raw = process.env.ADANOS_API_KEY;
   if (!raw) return [];
-  return ["reddit", "twitter"];
+  return ["reddit", "twitter", "news", "polymarket"];
 }
 
 // Keep backward compat for existing code
 export const getAdanosSentiment = getAdanosRedditSentiment;
+
+export interface AdanosCompareResult {
+  ticker: string;
+  found: boolean;
+  buzzScore: number;
+  trend: string;
+  mentions: number;
+  sentimentScore: number;
+  bullishPct: number;
+  bearishPct: number;
+}
+
+const SOURCE_COMPARE_PATHS: Record<string, string> = {
+  reddit: "/reddit/stocks/v1/compare",
+  twitter: "/x/stocks/v1/compare",
+  news: "/news/stocks/v1/compare",
+  polymarket: "/polymarket/stocks/v1/compare",
+};
+
+export async function getAdanosCompareSentiment(
+  tickers: string[],
+  source: "reddit" | "twitter" | "news" | "polymarket"
+): Promise<Map<string, AdanosCompareResult>> {
+  const path = SOURCE_COMPARE_PATHS[source];
+  if (!path) return new Map();
+
+  const encoded = tickers.map((t) => encodeURIComponent(t)).join(",");
+  const data = await adanosFetch(`${path}?tickers=${encoded}`);
+  if (!data) return new Map();
+
+  const results = new Map<string, AdanosCompareResult>();
+  const items = Array.isArray(data) ? data : (data.results as Record<string, unknown>[]) ?? [];
+
+  for (const item of items) {
+    const ticker = item.ticker as string;
+    if (!ticker) continue;
+    results.set(ticker, {
+      ticker,
+      found: (item.found as boolean) ?? true,
+      buzzScore: (item.buzz_score as number) ?? 0,
+      trend: (item.trend as string) ?? "unknown",
+      mentions: (item.mentions as number) ?? 0,
+      sentimentScore: (item.sentiment_score as number) ?? 0,
+      bullishPct: (item.bullish_pct as number) ?? 0,
+      bearishPct: (item.bearish_pct as number) ?? 0,
+    });
+  }
+
+  return results;
+}
