@@ -458,7 +458,128 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
           {earningsError}
         </p>
       )}
-      <div className="overflow-x-auto">
+      {/* Mobile card list */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {loading
+          ? items.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                  <div className="h-3 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                </div>
+              </div>
+            ))
+          : items.map((item) => {
+              const quote = quoteByTicker.get(item.ticker);
+              const earning = earningsByTicker.get(item.ticker);
+              const analyst = analystByTicker.get(item.ticker);
+              const upcoming =
+                earning?.earningsDate && isWithinDays(earning.earningsDate, 7);
+              const isExpanded = expandedTicker === item.ticker;
+
+              return (
+                <div key={item.id} className="flex flex-col gap-2">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    className={`flex min-h-[44px] w-full cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-colors ${
+                      isExpanded
+                        ? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/30"
+                        : "border-zinc-200 dark:border-zinc-800"
+                    }`}
+                    onClick={() =>
+                      setExpandedTicker(isExpanded ? null : item.ticker)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setExpandedTicker(isExpanded ? null : item.ticker);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                        <span
+                          className={`inline-block text-[10px] transition-transform ${
+                            isExpanded ? "rotate-90" : ""
+                          }`}
+                        >
+                          ▶
+                        </span>
+                        {item.ticker}
+                      </span>
+                      <span className="tabular-nums text-zinc-700 dark:text-zinc-300">
+                        {quote ? `$${quote.price.toFixed(2)}` : "—"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span
+                        className={`tabular-nums ${
+                          quote
+                            ? changeColor(quote.change)
+                            : "text-zinc-700 dark:text-zinc-300"
+                        }`}
+                      >
+                        {quote
+                          ? `${quote.change >= 0 ? "+" : ""}$${formatUsd(
+                              quote.change
+                            )} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)`
+                          : "—"}
+                      </span>
+                      <span
+                        className={`text-xs font-medium ${ratingColor(analyst?.recommendationKey)}`}
+                      >
+                        {analyst?.recommendationKey
+                          ? formatRating(analyst.recommendationKey)
+                          : "—"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                      <span
+                        className={
+                          upcoming
+                            ? "font-medium text-amber-500"
+                            : "text-zinc-500 dark:text-zinc-400"
+                        }
+                      >
+                        {earning?.earningsDate
+                          ? `Earnings: ${formatEarningsDate(earning.earningsDate)}`
+                          : "Earnings: —"}
+                      </span>
+                      <span
+                        onClick={(e) => e.stopPropagation()}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-end"
+                      >
+                        <DeleteButton id={item.id} />
+                      </span>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <TickerDetailPanel
+                      ticker={item.ticker}
+                      quote={quote}
+                      earning={earning}
+                      analyst={analyst}
+                    />
+                  )}
+                </div>
+              );
+            })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
