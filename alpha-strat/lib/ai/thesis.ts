@@ -157,7 +157,7 @@ export async function generateThesis(
   try {
     const parsed = JSON.parse(cleaned) as Omit<ThesisResponse, "ticker" | "generatedAt">;
 
-    const validRatings = ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"];
+    const validRatings = ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell", "Insufficient Data"];
     const rating = validRatings.includes(parsed.rating) ? parsed.rating : "Hold";
 
     return {
