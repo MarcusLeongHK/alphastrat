@@ -1010,4 +1010,34 @@ Every significant architecture and implementation decision, with the options con
 
 **Trade-off:** More TypeScript code to write (Black-Scholes, Greeks, signal derivation), but this code is the most testable and reliable part of the system.
 
-*This log will be updated as new decisions are made in Phases 6-8.*
+---
+
+## Decision 57 — Phase 9: Mobile Responsive + Adanos Maximization (2026-08-17)
+
+**Context:** AlphaStrat was desktop-only. The header overflowed on mobile, the watchlist's 8-column table was unusable on phones, and the Adanos free tier (250 req/month) was underutilized — using single-ticker endpoints when batch `/compare` was available.
+
+**Mobile approach — Adaptive layout vs separate mobile routes:**
+- Chose Tailwind responsive breakpoints (`md:` at 768px) over separate `/m/` routes.
+- Same components render differently per breakpoint — no code duplication.
+- Key patterns: hamburger slide-out nav, card layout for watchlist, bottom sheet for ticker detail.
+- Trade-off: More Tailwind classes per component, but zero route duplication.
+
+**Adanos maximization — Batch-first strategy:**
+- `/compare` endpoint batches up to 10 tickers per source in one call (4 calls vs 4N).
+- Enabled all 4 sources (reddit, twitter, news, polymarket) — were implemented but hardcoded off.
+- Added `/trending`, `/market-sentiment`, `/trending/sectors` to macro dashboard as "Market Mood" section.
+- Added `/stock/{ticker}/explain` for free AI trend explanations (Llama 3.1).
+- Monthly budget estimate: ~218/250 calls with 24hr shared cache on everything.
+
+**Thesis prompt grounding:**
+- Same treatment as options prompt (Decision 56): replaced "write with conviction, no hedging" with fact-first, threshold-based instructions.
+- Added explicit comparison benchmarks (P/E vs S&P median, growth rate categories).
+- Added "Insufficient Data" rating option when key metrics are missing.
+
+**Interview talking points:**
+- Responsive design without code duplication — one codebase, adaptive rendering
+- API budget optimization — 8x reduction via batch endpoints
+- Touch gesture handling — swipe-to-dismiss bottom sheet with momentum detection
+- AI prompt engineering — grounding LLM output in verifiable data thresholds
+
+*This log will be updated as new decisions are made in Phase 9+.*
