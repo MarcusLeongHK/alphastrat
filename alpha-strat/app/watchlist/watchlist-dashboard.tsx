@@ -459,12 +459,12 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
         </p>
       )}
       {/* Mobile card list */}
-      <div className="flex flex-col gap-2 md:hidden">
+      <div className="flex flex-col gap-3 md:hidden">
         {loading
-          ? items.map((item) => (
+          ? [0, 1, 2].map((i) => (
               <div
-                key={item.id}
-                className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+                key={i}
+                className="h-[80px] rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
               >
                 <div className="flex items-center justify-between">
                   <div className="h-4 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
@@ -490,9 +490,9 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                     role="button"
                     tabIndex={0}
                     aria-expanded={isExpanded}
-                    className={`flex min-h-[44px] w-full cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-colors ${
+                    className={`flex min-h-[44px] w-full cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-colors active:bg-zinc-50 dark:active:bg-zinc-900/20 ${
                       isExpanded
-                        ? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/30"
+                        ? "bg-zinc-50 border-zinc-200 dark:bg-zinc-900/30 dark:border-zinc-800"
                         : "border-zinc-200 dark:border-zinc-800"
                     }`}
                     onClick={() =>
@@ -506,7 +506,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                     }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                      <span className="flex items-center gap-1.5 font-mono text-base font-semibold text-zinc-900 dark:text-zinc-100">
                         <span
                           className={`inline-block text-[10px] transition-transform ${
                             isExpanded ? "rotate-90" : ""
@@ -516,7 +516,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                         </span>
                         {item.ticker}
                       </span>
-                      <span className="tabular-nums text-zinc-700 dark:text-zinc-300">
+                      <span className="tabular-nums text-base text-zinc-700 dark:text-zinc-300">
                         {quote ? `$${quote.price.toFixed(2)}` : "—"}
                       </span>
                     </div>
