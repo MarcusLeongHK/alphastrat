@@ -246,16 +246,16 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
             <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
               Shares
             </th>
-            <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
               Cost Basis
             </th>
-            <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
               Total Cost
             </th>
             <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
               Current Price
             </th>
-            <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
               Market Value
             </th>
             <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
@@ -305,16 +305,16 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
                   <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
                     {p.quantity}
                   </td>
-                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                  <td className={`hidden md:table-cell py-3 pr-4 text-right tabular-nums ${mutedText}`}>
                     ${p.cost_basis.toFixed(2)}
                   </td>
-                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                  <td className={`hidden md:table-cell py-3 pr-4 text-right tabular-nums ${mutedText}`}>
                     ${(p.quantity * p.cost_basis).toFixed(2)}
                   </td>
                   <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
                     {currentPrice !== null ? `$${currentPrice.toFixed(2)}` : "—"}
                   </td>
-                  <td className={`py-3 pr-4 text-right tabular-nums ${mutedText}`}>
+                  <td className={`hidden md:table-cell py-3 pr-4 text-right tabular-nums ${mutedText}`}>
                     {marketValue !== null ? `$${formatUsd(marketValue)}` : "—"}
                   </td>
                   <td
@@ -392,12 +392,12 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
               Total
             </td>
             <td className="pt-3 pr-4"></td>
-            <td className="pt-3 pr-4"></td>
-            <td className="pt-3 pr-4 text-right tabular-nums text-zinc-900 dark:text-zinc-100">
+            <td className="hidden md:table-cell pt-3 pr-4"></td>
+            <td className="hidden md:table-cell pt-3 pr-4 text-right tabular-nums text-zinc-900 dark:text-zinc-100">
               ${formatUsd(totalCost)}
             </td>
             <td className="pt-3 pr-4"></td>
-            <td className="pt-3 pr-4 text-right tabular-nums text-zinc-900 dark:text-zinc-100">
+            <td className="hidden md:table-cell pt-3 pr-4 text-right tabular-nums text-zinc-900 dark:text-zinc-100">
               {hasAnyPrice ? `$${formatUsd(totalMarketValue)}` : "—"}
             </td>
             <td

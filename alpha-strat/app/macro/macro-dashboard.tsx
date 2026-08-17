@@ -148,7 +148,7 @@ function CategorySection({ category }: { category: MacroCategory }) {
             <>
               <ul className="space-y-2">
                 {visibleArticles.map((article, i) => (
-                  <li key={i} className="group flex items-start justify-between gap-3">
+                  <li key={i} className="group flex items-start justify-between gap-3 py-2">
                     <a
                       href={article.link}
                       target="_blank"
@@ -210,7 +210,7 @@ function SectionSettings({
           return (
             <label
               key={id}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+              className={`flex min-h-[44px] items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
                 enabled
                   ? "bg-zinc-50 text-zinc-900 dark:bg-zinc-700/50 dark:text-zinc-100"
                   : "text-zinc-400 dark:text-zinc-500"
@@ -333,7 +333,7 @@ export function MacroDashboard() {
             )}
             <button
               onClick={() => setShowSettings((v) => !v)}
-              className={`rounded-md p-1.5 transition-colors ${
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-1.5 transition-colors ${
                 showSettings
                   ? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
                   : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"

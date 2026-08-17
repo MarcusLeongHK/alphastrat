@@ -284,7 +284,7 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
     : [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6 md:gap-8">
       <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
         {lastUpdated && <span>Updated {secondsAgo}s ago</span>}
         <button
