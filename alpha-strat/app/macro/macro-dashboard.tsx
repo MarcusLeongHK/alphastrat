@@ -22,6 +22,37 @@ interface MacroNewsResponse {
   generatedAt: string;
 }
 
+interface TrendingTicker {
+  ticker: string;
+  mentions: number;
+  buzzScore: number;
+  sentimentScore: number;
+  trend: string;
+}
+
+interface MarketSentimentData {
+  overallScore: number;
+  bullishPct: number;
+  bearishPct: number;
+  neutralPct: number;
+  totalMentions: number;
+  tickerCount: number;
+}
+
+interface SectorSentiment {
+  sector: string;
+  sentimentScore: number;
+  buzzScore: number;
+  mentions: number;
+  trend: string;
+}
+
+interface MarketMoodData {
+  trending: TrendingTicker[];
+  marketSentiment: MarketSentimentData | null;
+  sectors: SectorSentiment[];
+}
+
 const ALL_SECTIONS = ["fed", "geopolitics", "commodities", "jobs", "government"];
 
 const SECTION_LABELS: Record<string, string> = {
@@ -235,6 +266,98 @@ function SectionSettings({
   );
 }
 
+function tickerChipClasses(sentimentScore: number): string {
+  if (sentimentScore > 0.6) {
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300";
+  }
+  if (sentimentScore < 0.4) {
+    return "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300";
+  }
+  return "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300";
+}
+
+function sectorScoreClasses(sentimentScore: number): string {
+  if (sentimentScore > 0.6) return "text-emerald-600 dark:text-emerald-400";
+  if (sentimentScore < 0.4) return "text-red-600 dark:text-red-400";
+  return "text-zinc-500 dark:text-zinc-400";
+}
+
+function MarketMoodSection({ data }: { data: MarketMoodData }) {
+  const sentiment = data.marketSentiment;
+  const bullishPct = sentiment?.bullishPct ?? 0;
+  const bearishPct = sentiment?.bearishPct ?? 0;
+  const neutralPct = sentiment?.neutralPct ?? Math.max(0, 100 - bullishPct - bearishPct);
+  const topTrending = data.trending.slice(0, 8);
+
+  return (
+    <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        Market Mood
+      </h2>
+
+      {sentiment && (
+        <div className="mt-4">
+          <div className="flex h-3 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+            <div className="bg-emerald-500" style={{ width: `${bullishPct}%` }} />
+            <div className="bg-zinc-300 dark:bg-zinc-600" style={{ width: `${neutralPct}%` }} />
+            <div className="bg-red-500" style={{ width: `${bearishPct}%` }} />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-emerald-600 dark:text-emerald-400">
+              {bullishPct.toFixed(0)}% bullish
+            </span>
+            <span>{sentiment.totalMentions.toLocaleString()} mentions</span>
+            <span className="text-red-600 dark:text-red-400">
+              {bearishPct.toFixed(0)}% bearish
+            </span>
+          </div>
+        </div>
+      )}
+
+      {topTrending.length > 0 && (
+        <div className="mt-5">
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+            Trending
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {topTrending.map((t) => (
+              <span
+                key={t.ticker}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${tickerChipClasses(t.sentimentScore)}`}
+              >
+                {t.ticker}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.sectors.length > 0 && (
+        <div className="mt-5">
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+            Sectors
+          </h3>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            {data.sectors.map((s) => (
+              <div
+                key={s.sector}
+                className="rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+              >
+                <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                  {s.sector}
+                </div>
+                <div className={`text-sm font-semibold ${sectorScoreClasses(s.sentimentScore)}`}>
+                  {s.sentimentScore.toFixed(2)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MacroDashboard() {
   const [data, setData] = useState<MacroNewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -242,6 +365,23 @@ export function MacroDashboard() {
   const [enabledSections, setEnabledSections] = useState<string[]>(ALL_SECTIONS);
   const [showSettings, setShowSettings] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
+  const [marketMood, setMarketMood] = useState<MarketMoodData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/macro/market-mood")
+      .then(async (res) => {
+        if (!res.ok) return;
+        return res.json() as Promise<MarketMoodData>;
+      })
+      .then((data) => {
+        if (!cancelled && data) setMarketMood(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -319,6 +459,8 @@ export function MacroDashboard() {
 
   return (
     <div className="space-y-4">
+      {marketMood && <MarketMoodSection data={marketMood} />}
+
       {/* Macro Outlook Hero */}
       <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
         <div className="flex items-center justify-between">
