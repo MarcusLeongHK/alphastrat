@@ -6,6 +6,7 @@ import type { WatchlistItem } from "@/lib/types";
 import type { QuoteData, EarningsData, AnalystData } from "@/lib/market/types";
 import { removeFromWatchlist, type ActionResult } from "./actions";
 import { TickerDetailPanel } from "./ticker-detail-panel";
+import { BottomSheet } from "./bottom-sheet";
 
 const initialState: ActionResult = {};
 
@@ -485,98 +486,103 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
               const isExpanded = expandedTicker === item.ticker;
 
               return (
-                <div key={item.id} className="flex flex-col gap-2">
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={isExpanded}
-                    className={`flex min-h-[44px] w-full cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-colors active:bg-zinc-50 dark:active:bg-zinc-900/20 ${
-                      isExpanded
-                        ? "bg-zinc-50 border-zinc-200 dark:bg-zinc-900/30 dark:border-zinc-800"
-                        : "border-zinc-200 dark:border-zinc-800"
-                    }`}
-                    onClick={() =>
-                      setExpandedTicker(isExpanded ? null : item.ticker)
+                <div
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  className={`flex min-h-[44px] w-full cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-colors active:bg-zinc-50 dark:active:bg-zinc-900/20 ${
+                    isExpanded
+                      ? "bg-zinc-50 border-zinc-200 dark:bg-zinc-900/30 dark:border-zinc-800"
+                      : "border-zinc-200 dark:border-zinc-800"
+                  }`}
+                  onClick={() =>
+                    setExpandedTicker(isExpanded ? null : item.ticker)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setExpandedTicker(isExpanded ? null : item.ticker);
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setExpandedTicker(isExpanded ? null : item.ticker);
-                      }
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-mono text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                        <span
-                          className={`inline-block text-[10px] transition-transform ${
-                            isExpanded ? "rotate-90" : ""
-                          }`}
-                        >
-                          ▶
-                        </span>
-                        {item.ticker}
-                      </span>
-                      <span className="tabular-nums text-base text-zinc-700 dark:text-zinc-300">
-                        {quote ? `$${quote.price.toFixed(2)}` : "—"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 font-mono text-base font-semibold text-zinc-900 dark:text-zinc-100">
                       <span
-                        className={`tabular-nums ${
-                          quote
-                            ? changeColor(quote.change)
-                            : "text-zinc-700 dark:text-zinc-300"
+                        className={`inline-block text-[10px] transition-transform ${
+                          isExpanded ? "rotate-90" : ""
                         }`}
                       >
-                        {quote
-                          ? `${quote.change >= 0 ? "+" : ""}$${formatUsd(
-                              quote.change
-                            )} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)`
-                          : "—"}
+                        ▶
                       </span>
-                      <span
-                        className={`text-xs font-medium ${ratingColor(analyst?.recommendationKey)}`}
-                      >
-                        {analyst?.recommendationKey
-                          ? formatRating(analyst.recommendationKey)
-                          : "—"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                      <span
-                        className={
-                          upcoming
-                            ? "font-medium text-amber-500"
-                            : "text-zinc-500 dark:text-zinc-400"
-                        }
-                      >
-                        {earning?.earningsDate
-                          ? `Earnings: ${formatEarningsDate(earning.earningsDate)}`
-                          : "Earnings: —"}
-                      </span>
-                      <span
-                        onClick={(e) => e.stopPropagation()}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-end"
-                      >
-                        <DeleteButton id={item.id} />
-                      </span>
-                    </div>
+                      {item.ticker}
+                    </span>
+                    <span className="tabular-nums text-base text-zinc-700 dark:text-zinc-300">
+                      {quote ? `$${quote.price.toFixed(2)}` : "—"}
+                    </span>
                   </div>
 
-                  {isExpanded && (
-                    <TickerDetailPanel
-                      ticker={item.ticker}
-                      quote={quote}
-                      earning={earning}
-                      analyst={analyst}
-                    />
-                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span
+                      className={`tabular-nums ${
+                        quote
+                          ? changeColor(quote.change)
+                          : "text-zinc-700 dark:text-zinc-300"
+                      }`}
+                    >
+                      {quote
+                        ? `${quote.change >= 0 ? "+" : ""}$${formatUsd(
+                            quote.change
+                          )} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)`
+                        : "—"}
+                    </span>
+                    <span
+                      className={`text-xs font-medium ${ratingColor(analyst?.recommendationKey)}`}
+                    >
+                      {analyst?.recommendationKey
+                        ? formatRating(analyst.recommendationKey)
+                        : "—"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                    <span
+                      className={
+                        upcoming
+                          ? "font-medium text-amber-500"
+                          : "text-zinc-500 dark:text-zinc-400"
+                      }
+                    >
+                      {earning?.earningsDate
+                        ? `Earnings: ${formatEarningsDate(earning.earningsDate)}`
+                        : "Earnings: —"}
+                    </span>
+                    <span
+                      onClick={(e) => e.stopPropagation()}
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-end"
+                    >
+                      <DeleteButton id={item.id} />
+                    </span>
+                  </div>
                 </div>
               );
             })}
       </div>
+
+      <BottomSheet
+        open={!!expandedTicker}
+        onClose={() => setExpandedTicker(null)}
+        title={expandedTicker ?? ""}
+      >
+        {expandedTicker && (
+          <TickerDetailPanel
+            ticker={expandedTicker}
+            quote={quoteByTicker.get(expandedTicker) ?? undefined}
+            earning={earningsByTicker.get(expandedTicker) ?? undefined}
+            analyst={analystByTicker.get(expandedTicker) ?? undefined}
+          />
+        )}
+      </BottomSheet>
 
       {/* Desktop table */}
       <div className="hidden overflow-x-auto md:block">
