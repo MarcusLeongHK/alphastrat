@@ -409,3 +409,22 @@ export async function getAdanosSectorTrending(): Promise<AdanosSectorSentiment[]
     trend: (s.trend as string) ?? "unknown",
   }));
 }
+
+export interface AdanosExplanation {
+  ticker: string;
+  explanation: string;
+  generatedAt: string;
+}
+
+export async function getAdanosExplain(
+  ticker: string
+): Promise<AdanosExplanation | null> {
+  const data = await adanosFetch(`/reddit/stocks/v1/stock/${encodeURIComponent(ticker)}/explain`);
+  if (!data) return null;
+
+  return {
+    ticker: (data.ticker as string) ?? ticker,
+    explanation: (data.explanation as string) ?? (data.summary as string) ?? "",
+    generatedAt: (data.generated_at as string) ?? new Date().toISOString(),
+  };
+}
