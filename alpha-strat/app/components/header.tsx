@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/auth/actions";
 import { MarketStatus } from "@/app/components/market-status";
+import { MobileNav } from "@/app/components/mobile-nav";
 
 export async function Header() {
   const supabase = await createClient();
@@ -11,14 +12,14 @@ export async function Header() {
 
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3">
+      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 md:px-6">
         <Link
           href="/"
           className="text-lg font-semibold text-zinc-900 dark:text-zinc-100"
         >
           AlphaStrat
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="hidden items-center gap-4 md:flex">
           {user ? (
             <>
               <Link
@@ -61,6 +62,10 @@ export async function Header() {
             </Link>
           )}
         </nav>
+        <MobileNav
+          user={user ? { email: user.email ?? "" } : null}
+          logoutAction={logout}
+        />
       </div>
     </header>
   );
