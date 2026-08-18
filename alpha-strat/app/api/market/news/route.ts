@@ -3,7 +3,7 @@ import { getOrFetch } from "@/lib/cache";
 import { getNews } from "@/lib/market/yahoo";
 import { NEWS_TTL } from "@/lib/cache/freshness";
 import { createClient } from "@/lib/supabase/server";
-import { NewsArticle, TickerNews } from "@/lib/market/types";
+import { NewsArticle, TickerNews, StructuredNewsSummary } from "@/lib/market/types";
 import { generateNewsSummary } from "@/lib/ai/news-summary";
 
 export async function GET(request: Request) {
@@ -43,18 +43,23 @@ export async function GET(request: Request) {
       () => getNews(ticker)
     );
 
-    const { data: aiSummary } = await getOrFetch<string | null>(
+    const { data: structured } = await getOrFetch<StructuredNewsSummary | null>(
       supabase,
-      `news-summary:${ticker}`,
+      `news-themes:${ticker}`,
       "news-summary",
       NEWS_TTL,
       () => generateNewsSummary(ticker, articles)
     );
 
+    const aiSummary = structured
+      ? structured.themes.map((t) => t.summary).join(" ")
+      : null;
+
     const tickerNews: TickerNews = {
       ticker,
       articles,
       aiSummary,
+      themes: structured?.themes ?? null,
     };
 
     return NextResponse.json(tickerNews);

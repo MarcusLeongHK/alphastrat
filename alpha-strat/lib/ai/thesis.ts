@@ -31,6 +31,9 @@ Respond with valid JSON matching this exact structure (no markdown, no code fenc
   "bullCase": "4-6 sentences, each citing specific data",
   "bearCase": "4-6 sentences, each citing specific data",
   "baseCase": "4-6 sentences, each citing specific data",
+  "bullSummary": "One sentence capturing the core bull thesis",
+  "bearSummary": "One sentence capturing the core bear thesis",
+  "baseSummary": "One sentence capturing the core base case",
   "keyMetrics": [
     { "label": "metric name", "value": "formatted value", "context": "comparison to benchmark" }
   ]
@@ -52,6 +55,11 @@ function formatPercent(n: number | null): string {
 function formatRatio(n: number | null): string {
   if (n === null) return "N/A";
   return n.toFixed(2);
+}
+
+function extractFirstSentence(text: string): string {
+  const match = text.match(/^[^.!?]+[.!?]/);
+  return match ? match[0].trim() : text.slice(0, 100);
 }
 
 export function buildThesisPrompt(
@@ -167,6 +175,9 @@ export async function generateThesis(
       bullCase: parsed.bullCase || "Insufficient data for bull case analysis.",
       bearCase: parsed.bearCase || "Insufficient data for bear case analysis.",
       baseCase: parsed.baseCase || "Insufficient data for base case analysis.",
+      bullSummary: parsed.bullSummary || extractFirstSentence(parsed.bullCase || ""),
+      bearSummary: parsed.bearSummary || extractFirstSentence(parsed.bearCase || ""),
+      baseSummary: parsed.baseSummary || extractFirstSentence(parsed.baseCase || ""),
       keyMetrics: Array.isArray(parsed.keyMetrics) ? parsed.keyMetrics : [],
       generatedAt: new Date().toISOString(),
     };
@@ -178,6 +189,9 @@ export async function generateThesis(
       bullCase: "Unable to generate bull case. Please try refreshing.",
       bearCase: "Unable to generate bear case. Please try refreshing.",
       baseCase: "Unable to generate base case. Please try refreshing.",
+      bullSummary: "Unable to generate summary.",
+      bearSummary: "Unable to generate summary.",
+      baseSummary: "Unable to generate summary.",
       keyMetrics: [],
       generatedAt: new Date().toISOString(),
     };

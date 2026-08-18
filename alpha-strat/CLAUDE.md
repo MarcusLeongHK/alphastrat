@@ -55,14 +55,14 @@
 - `lib/market/adanos.ts` — Adanos API client (Reddit + Twitter/X sentiment, multi-key round-robin)
 - `lib/market/reddit.ts` — Reddit RSS sentiment fetcher (fallback, multi-subreddit search)
 - `lib/market/stocktwits.ts` — StockTwits sentiment client (blocked by Cloudflare as of Aug 2026)
-- `lib/ai/news-summary.ts` — AI news summarization
+- `lib/ai/news-summary.ts` — AI news summarization; returns structured themes (theme chips + per-theme detail + filtered sources) with fallback to legacy prose summary for old cache entries
 - `lib/ai/reddit-sentiment.ts` — Groq-powered Reddit sentiment analysis
 - `lib/ai/sentiment-comparison.ts` — Groq-powered retail vs institutional comparison
 - `app/api/market/news/route.ts` — news + AI summary per ticker
 - `app/api/market/sentiment/route.ts` — analyst recommendation trend data
 - `app/api/market/reddit-sentiment/route.ts` — social sentiment (Adanos Reddit + Twitter, cached 24hr)
 - `lib/market/rss.ts` — RSS feed fetcher for macro news (Fed, geopolitics, commodities, jobs, government)
-- `lib/ai/macro-summary.ts` — Gemini-powered per-category + cross-category macro synthesis
+- `lib/ai/macro-summary.ts` — Gemini-powered per-category + cross-category macro synthesis; returns structured outlook (sentiment badge, headline, driver chips) and per-category one-liners with fallback to legacy prose for old cache entries
 - `app/api/macro/news/route.ts` — macro news API (shared cache, 1hr TTL)
 - `app/api/macro/preferences/route.ts` — per-user section preferences CRUD
 - `app/macro/page.tsx` + `macro-dashboard.tsx` — Macro Dashboard UI with section customization

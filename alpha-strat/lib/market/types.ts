@@ -48,10 +48,22 @@ export interface NewsArticle {
   summary?: string;
 }
 
+export interface NewsTheme {
+  label: string;
+  summary: string;
+  detail: string;
+  articleIndices: number[];
+}
+
+export interface StructuredNewsSummary {
+  themes: NewsTheme[];
+}
+
 export interface TickerNews {
   ticker: string;
   articles: NewsArticle[];
   aiSummary: string | null;
+  themes?: NewsTheme[] | null;
 }
 
 export interface StockTwitsSentiment {
@@ -147,6 +159,9 @@ export interface ThesisResponse {
   bullCase: string;
   bearCase: string;
   baseCase: string;
+  bullSummary?: string;
+  bearSummary?: string;
+  baseSummary?: string;
   keyMetrics: Array<{
     label: string;
     value: string;

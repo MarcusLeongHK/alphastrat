@@ -3,11 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrFetch } from "@/lib/cache";
 import { MACRO_TTL } from "@/lib/cache/freshness";
 import { fetchMacroFeeds, type MacroCategory } from "@/lib/market/rss";
-import { generateMacroSummary } from "@/lib/ai/macro-summary";
+import { generateMacroSummary, type MacroOutlook } from "@/lib/ai/macro-summary";
 
 interface MacroNewsResponse {
   categories: MacroCategory[];
-  macroOutlook: string;
+  macroOutlook: MacroOutlook;
   generatedAt: string;
 }
 
@@ -32,7 +32,11 @@ export async function GET() {
 
         const enrichedCategories = categories.map((cat) => {
           const match = summaryResult.categories.find((s) => s.id === cat.id);
-          return { ...cat, summary: match?.summary ?? "" };
+          return {
+            ...cat,
+            summary: match?.summary ?? "",
+            oneLiner: match?.oneLiner ?? "",
+          };
         });
 
         return {

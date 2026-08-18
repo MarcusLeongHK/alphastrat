@@ -9,16 +9,23 @@ interface MacroArticle {
   source: string;
 }
 
+interface MacroOutlookData {
+  sentimentLabel: string;
+  headline: string;
+  keyDrivers: string[];
+}
+
 interface MacroCategory {
   id: string;
   label: string;
   summary: string;
+  oneLiner?: string;
   articles: MacroArticle[];
 }
 
 interface MacroNewsResponse {
   categories: MacroCategory[];
-  macroOutlook: string;
+  macroOutlook: string | MacroOutlookData;
   generatedAt: string;
 }
 
@@ -91,6 +98,25 @@ const CATEGORY_STYLES: Record<string, { accent: string; bg: string; badge: strin
   },
 };
 
+const SENTIMENT_STYLES: Record<string, { bg: string; text: string }> = {
+  Bullish: {
+    bg: "bg-emerald-100 dark:bg-emerald-900/50",
+    text: "text-emerald-700 dark:text-emerald-300",
+  },
+  Cautious: {
+    bg: "bg-amber-100 dark:bg-amber-900/50",
+    text: "text-amber-700 dark:text-amber-300",
+  },
+  Bearish: {
+    bg: "bg-red-100 dark:bg-red-900/50",
+    text: "text-red-700 dark:text-red-300",
+  },
+  Mixed: {
+    bg: "bg-zinc-100 dark:bg-zinc-800",
+    text: "text-zinc-600 dark:text-zinc-300",
+  },
+};
+
 function timeAgo(dateStr: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return "just now";
@@ -132,7 +158,7 @@ function CategorySkeleton() {
 const INITIAL_ARTICLE_COUNT = 5;
 
 function CategorySection({ category }: { category: MacroCategory }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const style = CATEGORY_STYLES[category.id] ?? CATEGORY_STYLES.government;
   const visibleArticles = showAll ? category.articles : category.articles.slice(0, INITIAL_ARTICLE_COUNT);
@@ -144,16 +170,23 @@ function CategorySection({ category }: { category: MacroCategory }) {
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center justify-between px-5 py-4 text-left"
       >
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {category.label}
-          </h3>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>
-            {category.articles.length} {category.articles.length === 1 ? "article" : "articles"}
-          </span>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {category.label}
+            </h3>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>
+              {category.articles.length}
+            </span>
+          </div>
+          {!expanded && category.oneLiner && (
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">
+              {category.oneLiner}
+            </p>
+          )}
         </div>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`ml-2 h-4 w-4 shrink-0 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -188,7 +221,7 @@ function CategorySection({ category }: { category: MacroCategory }) {
                     >
                       {article.title}
                     </a>
-                    <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                    <span className="hidden shrink-0 text-xs text-zinc-400 dark:text-zinc-500 md:inline">
                       {timeAgo(article.pubDate)}
                     </span>
                   </li>
@@ -489,9 +522,41 @@ export function MacroDashboard() {
             </button>
           </div>
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
-          {data.macroOutlook || "Insufficient data for analysis."}
-        </p>
+        {typeof data.macroOutlook === "string" ? (
+          /* Fallback: old cached data */
+          <p className="mt-3 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+            {data.macroOutlook || "Insufficient data for analysis."}
+          </p>
+        ) : (
+          /* New structured outlook */
+          <div className="mt-3">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              {(() => {
+                const style = SENTIMENT_STYLES[data.macroOutlook.sentimentLabel] ?? SENTIMENT_STYLES.Mixed;
+                return (
+                  <span className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${style.bg} ${style.text}`}>
+                    {data.macroOutlook.sentimentLabel}
+                  </span>
+                );
+              })()}
+              <p className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                {data.macroOutlook.headline}
+              </p>
+            </div>
+            {data.macroOutlook.keyDrivers.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {data.macroOutlook.keyDrivers.map((driver, i) => (
+                  <span
+                    key={i}
+                    className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                  >
+                    {driver}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Section Settings Panel */}
@@ -504,9 +569,11 @@ export function MacroDashboard() {
       )}
 
       {/* Category Sections */}
-      {filteredCategories.map((cat) => (
-        <CategorySection key={cat.id} category={cat} />
-      ))}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {filteredCategories.map((cat) => (
+          <CategorySection key={cat.id} category={cat} />
+        ))}
+      </div>
     </div>
   );
 }

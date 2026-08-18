@@ -1,17 +1,29 @@
 import { generateCompletion } from "./client";
 import type { MacroCategory } from "@/lib/market/rss";
 
+export interface MacroOutlook {
+  sentimentLabel: "Bullish" | "Cautious" | "Bearish" | "Mixed";
+  headline: string;
+  keyDrivers: string[];
+}
+
 export interface MacroSummaryResult {
-  categories: { id: string; summary: string }[];
-  macroOutlook: string;
+  categories: { id: string; oneLiner: string; summary: string }[];
+  macroOutlook: MacroOutlook;
 }
 
 const MACRO_SYSTEM_PROMPT = `You are a macro-economic analyst writing for sophisticated investors. Given recent news headlines grouped by category, produce a JSON response with:
 
-1. "categories" — an array where each entry has "id" (matching the category ID provided) and "summary" (a thorough 4-6 sentence analysis of that category's headlines — not a list of headlines, but what they mean for markets. Cover the key themes, name specific data points or events, explain why they matter for positioning, and flag the risks or catalysts to watch)
-2. "macroOutlook" — a 5-7 sentence cross-category synthesis connecting themes across all categories, identifying contradictions between policy signals and market data, noting sector rotation implications, and highlighting what sophisticated investors should be positioning for or hedging against
+1. "categories" — an array where each entry has:
+   - "id" (matching the category ID provided)
+   - "oneLiner" (one sentence headline-style summary of the category, max 15 words)
+   - "summary" (a thorough 4-6 sentence analysis — not a list of headlines, but what they mean for markets)
+2. "macroOutlook" — an object with:
+   - "sentimentLabel": one of "Bullish", "Cautious", "Bearish", or "Mixed"
+   - "headline": one sentence cross-category synthesis (max 20 words)
+   - "keyDrivers": array of 3-5 short phrases (2-5 words each) identifying the key macro drivers
 
-Write with conviction. Be specific about implications — name sectors, asset classes, and directional calls where the data supports them. No hedging language like "could potentially" or "it remains to be seen." Every sentence should add signal, not filler.
+Write with conviction. Be specific about implications. No hedging language. Every sentence should add signal.
 
 Respond with valid JSON only, no markdown fences.`;
 
@@ -36,8 +48,8 @@ export async function generateMacroSummary(
   const hasArticles = categories.some((c) => c.articles.length > 0);
   if (!hasArticles) {
     return {
-      categories: categories.map((c) => ({ id: c.id, summary: "" })),
-      macroOutlook: "",
+      categories: categories.map((c) => ({ id: c.id, oneLiner: "", summary: "" })),
+      macroOutlook: { sentimentLabel: "Mixed" as const, headline: "", keyDrivers: [] },
     };
   }
 
@@ -48,11 +60,11 @@ export async function generateMacroSummary(
     const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const parsed = JSON.parse(cleaned) as MacroSummaryResult;
 
-    if (!parsed.categories || !parsed.macroOutlook) {
+    if (!parsed.categories || !parsed.macroOutlook || typeof parsed.macroOutlook === "string") {
       console.warn("[macro-summary] unexpected AI response shape");
       return {
-        categories: categories.map((c) => ({ id: c.id, summary: "" })),
-        macroOutlook: "",
+        categories: categories.map((c) => ({ id: c.id, oneLiner: "", summary: "" })),
+        macroOutlook: { sentimentLabel: "Mixed" as const, headline: "", keyDrivers: [] },
       };
     }
 
@@ -60,8 +72,8 @@ export async function generateMacroSummary(
   } catch (err) {
     console.warn("[macro-summary] AI generation failed:", err instanceof Error ? err.message : err);
     return {
-      categories: categories.map((c) => ({ id: c.id, summary: "" })),
-      macroOutlook: "",
+      categories: categories.map((c) => ({ id: c.id, oneLiner: "", summary: "" })),
+      macroOutlook: { sentimentLabel: "Mixed" as const, headline: "", keyDrivers: [] },
     };
   }
 }
