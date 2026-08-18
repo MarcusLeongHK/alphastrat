@@ -33,12 +33,17 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     };
 
     document.addEventListener("keydown", handleKeyDown);
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (isMobile) {
+      document.body.style.overflow = "hidden";
+    }
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
+      if (isMobile) {
+        document.body.style.overflow = previousOverflow;
+      }
     };
   }, [open, onClose]);
 
