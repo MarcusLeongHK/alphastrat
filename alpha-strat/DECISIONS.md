@@ -1040,4 +1040,28 @@ Every significant architecture and implementation decision, with the options con
 - Touch gesture handling — swipe-to-dismiss bottom sheet with momentum detection
 - AI prompt engineering — grounding LLM output in verifiable data thresholds
 
+---
+
+## Phase 10a: Visual Polish + News Themes (2026-08-18)
+
+### Structured AI prompts over prose
+**Decision:** Restructured all three AI prompts (thesis, news, macro) to return JSON with both summary fields and full-text fields.
+**Tradeoff:** ~10-20% more output tokens vs dramatically improved UI with visual gauges, collapsible cards, and theme chips.
+**Why:** Prose paragraphs are hard to scan on mobile. Structured data enables progressive disclosure (collapsed summaries → expanded details).
+
+### Backward-compatible schema evolution
+**Decision:** New fields are optional (`bullSummary?`, `themes?`, `oneLiner?`). Old cached data renders with fallback UI (existing paragraph layout). Cache expires naturally per TTL.
+**Tradeoff:** Dual rendering paths vs zero-downtime migration. Old cache entries expire naturally (1hr macro, 4hr news, 7d thesis).
+**Why:** Users shouldn't see broken UI just because they have cached data from before the update.
+
+### News cache key change
+**Decision:** Changed news AI cache key from `news-summary:${ticker}` to `news-themes:${ticker}`.
+**Why:** Old cache entries stored `string`, new ones store `StructuredNewsSummary`. Different key prevents type mismatches on cache hits.
+
+### Accordion vs independent toggles
+**Decision:** Thesis cases use accordion (one at a time). Macro categories use independent toggles (multiple open).
+**Why:** Thesis cases are mutually exclusive narratives — comparing them side-by-side is rare. Macro categories are independent topics users may want to compare.
+
+---
+
 *This log will be updated as new decisions are made in Phase 9+.*
