@@ -11,6 +11,7 @@ export interface MacroCategory {
   id: string;
   label: string;
   summary: string;
+  oneLiner?: string;
   articles: MacroArticle[];
 }
 
