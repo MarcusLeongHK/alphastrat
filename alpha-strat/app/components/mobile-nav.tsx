@@ -18,11 +18,12 @@ const NAV_LINKS = [
 export function MobileNav({ user, logoutAction }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
-  // Close the panel whenever the route changes.
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (open) setOpen(false);
+  }
 
   // Lock body scroll while the panel is open.
   useEffect(() => {

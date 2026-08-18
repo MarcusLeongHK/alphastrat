@@ -13,8 +13,15 @@ const DRAG_DISMISS_THRESHOLD_PX = 100;
 
 export function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
   const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef<number | null>(null);
-  const dragging = useRef(false);
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  if (prevOpen !== open) {
+    setPrevOpen(open);
+    setDragY(0);
+    setIsDragging(false);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -35,25 +42,15 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     };
   }, [open, onClose]);
 
-  // Reset drag state whenever the sheet opens/closes so a stale offset
-  // doesn't linger on the next open.
-  useEffect(() => {
-    if (!open) {
-      setDragY(0);
-      dragStartY.current = null;
-      dragging.current = false;
-    }
-  }, [open]);
-
   if (!open) return null;
 
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
     dragStartY.current = e.touches[0].clientY;
-    dragging.current = true;
+    setIsDragging(true);
   };
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (!dragging.current || dragStartY.current === null) return;
+    if (dragStartY.current === null) return;
     const delta = e.touches[0].clientY - dragStartY.current;
     if (delta > 0) {
       setDragY(delta);
@@ -61,12 +58,12 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
   };
 
   const handleTouchEnd = () => {
-    if (dragging.current && dragY > DRAG_DISMISS_THRESHOLD_PX) {
+    if (dragY > DRAG_DISMISS_THRESHOLD_PX) {
       onClose();
     }
     setDragY(0);
     dragStartY.current = null;
-    dragging.current = false;
+    setIsDragging(false);
   };
 
   return (
@@ -86,7 +83,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         className="pb-safe-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl bg-white shadow-xl dark:bg-zinc-950"
         style={{
           transform: `translateY(${dragY}px)`,
-          transition: dragging.current ? "none" : "transform 0.2s ease-out",
+          transition: isDragging ? "none" : "transform 0.2s ease-out",
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
