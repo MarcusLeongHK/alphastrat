@@ -147,6 +147,9 @@ export interface ThesisResponse {
   bullCase: string;
   bearCase: string;
   baseCase: string;
+  bullSummary?: string;
+  bearSummary?: string;
+  baseSummary?: string;
   keyMetrics: Array<{
     label: string;
     value: string;
