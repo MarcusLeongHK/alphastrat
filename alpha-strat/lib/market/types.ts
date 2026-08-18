@@ -142,7 +142,7 @@ export interface TickerFundamentals {
 
 export interface ThesisResponse {
   ticker: string;
-  rating: "Strong Buy" | "Buy" | "Hold" | "Sell" | "Strong Sell";
+  rating: "Strong Buy" | "Buy" | "Hold" | "Sell" | "Strong Sell" | "Insufficient Data";
   ratingRationale: string;
   bullCase: string;
   bearCase: string;

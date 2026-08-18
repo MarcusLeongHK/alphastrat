@@ -74,6 +74,10 @@
 - `lib/market/yahoo-options.ts` — Yahoo Finance v7 options chain fetcher + risk-free rate
 - `lib/ai/options-analysis.ts` — Gemini-powered options market narrative
 - `app/api/market/options-analysis/route.ts` — options analysis API (shared cache, 4hr TTL)
+- `app/components/mobile-nav.tsx` — hamburger menu + slide-out panel (client component)
+- `app/watchlist/bottom-sheet.tsx` — swipe-to-dismiss bottom sheet for mobile detail panel
+- `app/api/market/batch-sentiment/route.ts` — Adanos batch compare API (shared cache, 24hr TTL)
+- `app/api/macro/market-mood/route.ts` — Adanos trending + market sentiment + sectors (shared cache, 24hr TTL)
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)

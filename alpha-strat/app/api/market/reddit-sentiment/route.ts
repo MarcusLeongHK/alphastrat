@@ -5,11 +5,13 @@ import {
   getAdanosTwitterSentiment,
   getAdanosNewsSentiment,
   getAdanosPolymarketSentiment,
+  getAdanosExplain,
   getAvailableSources,
   type AdanosSentiment,
   type AdanosTwitterSentiment,
   type AdanosNewsSentiment,
   type AdanosPolymarketSentiment,
+  type AdanosExplanation,
 } from "@/lib/market/adanos";
 import { generateSentimentComparison } from "@/lib/ai/sentiment-comparison";
 import { getAnalystData } from "@/lib/market/yahoo";
@@ -23,6 +25,7 @@ interface SocialSentimentResponse {
   news: AdanosNewsSentiment | null;
   polymarket: AdanosPolymarketSentiment | null;
   comparison: string | null;
+  explain: AdanosExplanation | null;
 }
 
 function buildComparisonContext(
@@ -87,12 +90,13 @@ export async function GET(request: Request) {
       async () => {
         const sources = getAvailableSources();
 
-        const [reddit, twitter, news, polymarket, analyst] = await Promise.all([
+        const [reddit, twitter, news, polymarket, analyst, explain] = await Promise.all([
           sources.includes("reddit") ? getAdanosRedditSentiment(ticker) : Promise.resolve(null),
           sources.includes("twitter") ? getAdanosTwitterSentiment(ticker) : Promise.resolve(null),
           sources.includes("news") ? getAdanosNewsSentiment(ticker) : Promise.resolve(null),
           sources.includes("polymarket") ? getAdanosPolymarketSentiment(ticker) : Promise.resolve(null),
           getAnalystData(ticker),
+          getAdanosExplain(ticker),
         ]);
 
         let comparison: string | null = null;
@@ -106,7 +110,7 @@ export async function GET(request: Request) {
           );
         }
 
-        return { ticker, reddit, twitter, news, polymarket, comparison };
+        return { ticker, reddit, twitter, news, polymarket, comparison, explain };
       },
       {
         shouldCache: (result) =>
