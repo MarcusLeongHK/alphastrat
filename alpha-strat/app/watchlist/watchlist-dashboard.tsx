@@ -576,6 +576,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
       >
         {expandedTicker && (
           <TickerDetailPanel
+            key={expandedTicker}
             ticker={expandedTicker}
             quote={quoteByTicker.get(expandedTicker) ?? undefined}
             earning={earningsByTicker.get(expandedTicker) ?? undefined}
@@ -743,6 +744,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                       <tr>
                         <td colSpan={8} className="p-0">
                           <TickerDetailPanel
+                            key={item.ticker}
                             ticker={item.ticker}
                             quote={quote}
                             earning={earning}
