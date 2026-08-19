@@ -143,7 +143,7 @@ export function OptionsTab({ ticker }: OptionsTabProps) {
       ) : optionsData ? (
         <>
           {/* Section A: Sentiment Summary + AI Analysis */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <div className="mb-3 flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className={`h-2.5 w-2.5 rounded-full ${
@@ -189,7 +189,7 @@ export function OptionsTab({ ticker }: OptionsTabProps) {
           </div>
 
           {/* Section B: Expected Move Gauge */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               Expected Move
             </h4>
@@ -284,7 +284,7 @@ export function OptionsTab({ ticker }: OptionsTabProps) {
           </Card>
 
           {/* Section C: IV Surface Chart */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               IV Surface by Moneyness
             </h4>
@@ -382,7 +382,7 @@ export function OptionsTab({ ticker }: OptionsTabProps) {
           </Card>
 
           {/* Section D: IV Term Structure */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               IV Term Structure
             </h4>
@@ -449,7 +449,7 @@ export function OptionsTab({ ticker }: OptionsTabProps) {
           </Card>
 
           {/* Section E: Positioning by Strike */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               Positioning by Strike
             </h4>

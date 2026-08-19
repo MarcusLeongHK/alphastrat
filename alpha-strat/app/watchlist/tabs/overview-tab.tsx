@@ -41,7 +41,7 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Analyst Ratings */}
-      <Card className="p-3">
+      <Card padding="p-3">
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Analyst Consensus
         </h4>
@@ -112,7 +112,7 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
       </Card>
 
       {/* Earnings Info */}
-      <Card className="p-3">
+      <Card padding="p-3">
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Next Earnings
         </h4>

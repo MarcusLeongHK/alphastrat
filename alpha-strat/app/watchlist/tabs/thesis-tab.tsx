@@ -294,7 +294,7 @@ export function ThesisTab({ ticker }: ThesisTabProps) {
 
           {/* Key Metrics Grid */}
           {thesisData.keyMetrics.length > 0 && (
-            <Card className="p-3">
+            <Card padding="p-3">
               <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 Key Metrics
               </h4>

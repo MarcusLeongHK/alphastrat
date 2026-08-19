@@ -215,7 +215,7 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Recommendation Trend */}
-      <Card className="p-3">
+      <Card padding="p-3">
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Analyst Recommendation Trend
         </h4>
@@ -252,7 +252,7 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
       </Card>
 
       {/* Sentiment Summary */}
-      <Card className="p-3">
+      <Card padding="p-3">
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Sentiment Summary
         </h4>

@@ -81,7 +81,7 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
       ) : earningsDetail ? (
         <>
           {/* Next Earnings Card */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               Next Earnings
             </h4>
@@ -159,7 +159,7 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
           </Card>
 
           {/* EPS Beat/Miss Chart */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               EPS History — Beat / Miss
             </h4>
@@ -256,7 +256,7 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
           </Card>
 
           {/* Revenue Trend Chart */}
-          <Card className="p-4">
+          <Card padding="p-4">
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               Revenue & Net Income Trend
             </h4>

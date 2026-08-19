@@ -71,7 +71,7 @@ function NewsThemeChips({
 
       {/* Selected theme detail */}
       {selected && (
-        <Card className="p-4">
+        <Card padding="p-4">
           <p className="text-sm leading-relaxed text-text-primary">
             {renderCitedSummary(selected.detail, articles)}
           </p>
@@ -180,7 +180,7 @@ export function NewsTab({ ticker }: NewsTabProps) {
             />
           ) : news.aiSummary && news.articles.length > 0 ? (
             /* Fallback: old cached data without themes */
-            <Card className="p-4">
+            <Card padding="p-4">
               <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 <span aria-hidden="true">✦</span> News Summary
               </h4>
@@ -215,7 +215,7 @@ export function NewsTab({ ticker }: NewsTabProps) {
               </div>
             </Card>
           ) : news.articles.length > 0 ? (
-            <Card className="p-3">
+            <Card padding="p-3">
               <p className="text-xs text-text-tertiary mb-2">
                 Summary unavailable. Recent articles:
               </p>
