@@ -15,6 +15,8 @@ import {
 } from "recharts";
 import type { EarningsDetailData } from "./types";
 import { formatRevenue } from "./utils";
+import { Card } from "@/app/components/ui/card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 function earningsDateRelativeLabel(dateStr: string): string {
   const diff = Math.ceil(
@@ -69,27 +71,24 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
       {earningsLoading ? (
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800"
-            />
+            <Skeleton key={i} className="h-24" />
           ))}
         </div>
       ) : earningsError ? (
-        <p className="py-6 text-center text-xs text-zinc-400">
+        <p className="py-6 text-center text-xs text-text-tertiary">
           Unable to load earnings data
         </p>
       ) : earningsDetail ? (
         <>
           {/* Next Earnings Card */}
-          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <Card className="p-4">
+            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               Next Earnings
             </h4>
             {earningsDetail.nextEarningsDate ? (
               <div className="flex flex-col gap-2">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                  <span className="text-lg font-bold text-text-primary">
                     {new Date(earningsDetail.nextEarningsDate + "T00:00:00").toLocaleDateString(undefined, {
                       weekday: "short",
                       month: "short",
@@ -97,33 +96,33 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                       year: "numeric",
                     })}
                   </span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  <span className="text-xs text-text-tertiary">
                     {earningsDateRelativeLabel(earningsDetail.nextEarningsDate)}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    <div className="text-[10px] text-text-tertiary">
                       Consensus EPS
                     </div>
-                    <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                    <div className="text-sm font-medium tabular-nums text-text-primary">
                       {earningsDetail.nextEpsEstimate != null
                         ? `$${earningsDetail.nextEpsEstimate.toFixed(2)}`
                         : "—"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    <div className="text-[10px] text-text-tertiary">
                       Revenue Est.
                     </div>
-                    <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                    <div className="text-sm font-medium tabular-nums text-text-primary">
                       {earningsDetail.nextRevenueEstimate != null
                         ? formatRevenue(earningsDetail.nextRevenueEstimate)
                         : "—"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    <div className="text-[10px] text-text-tertiary">
                       EPS Growth
                     </div>
                     {(() => {
@@ -136,8 +135,8 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                           <div
                             className={`text-sm font-medium tabular-nums ${
                               nextQ.epsGrowth >= 0
-                                ? "text-emerald-500"
-                                : "text-red-500"
+                                ? "text-success"
+                                : "text-danger"
                             }`}
                           >
                             {nextQ.epsGrowth >= 0 ? "+" : ""}
@@ -146,22 +145,22 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                         );
                       }
                       return (
-                        <div className="text-sm text-zinc-400">—</div>
+                        <div className="text-sm text-text-tertiary">—</div>
                       );
                     })()}
                   </div>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-text-tertiary">
                 No upcoming earnings date
               </p>
             )}
-          </div>
+          </Card>
 
           {/* EPS Beat/Miss Chart */}
-          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <Card className="p-4">
+            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               EPS History — Beat / Miss
             </h4>
             {earningsDetail.earningsHistory.length > 0 ? (
@@ -183,34 +182,36 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                     strokeDasharray="3 3"
                     vertical={false}
                     stroke="currentColor"
-                    className="text-zinc-200 dark:text-zinc-700"
+                    className="text-border-primary"
                   />
                   <XAxis
                     dataKey="quarter"
                     tick={{ fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
-                    className="text-zinc-500"
+                    className="text-text-secondary"
                   />
                   <YAxis
                     tick={{ fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
-                    className="text-zinc-500"
+                    className="text-text-secondary"
                     tickFormatter={(v: number) => `$${v.toFixed(2)}`}
                   />
                   <RechartsTooltip
                     contentStyle={{
                       fontSize: 12,
                       borderRadius: 8,
-                      border: "1px solid #e4e4e7",
+                      border: "1px solid var(--border-primary)",
+                      background: "var(--surface-primary)",
+                      color: "var(--text-primary)",
                     }}
                     formatter={(value, name) => [
                       `$${typeof value === "number" ? value.toFixed(2) : "—"}`,
                       name === "estimate" ? "Estimate" : "Actual",
                     ]}
                   />
-                  <Bar dataKey="estimate" fill="#a1a1aa" radius={[2, 2, 0, 0]} barSize={20} name="estimate" />
+                  <Bar dataKey="estimate" fill="var(--border-secondary)" radius={[2, 2, 0, 0]} barSize={20} name="estimate" />
                   <Bar dataKey="actual" radius={[2, 2, 0, 0]} barSize={20} name="actual">
                     {earningsDetail.earningsHistory.map((e, i) => {
                       const beat =
@@ -220,7 +221,7 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                       return (
                         <Cell
                           key={i}
-                          fill={beat ? "#10b981" : "#ef4444"}
+                          fill={beat ? "var(--success)" : "var(--danger)"}
                         />
                       );
                     })}
@@ -228,20 +229,20 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="py-4 text-center text-xs text-zinc-400">
+              <p className="py-4 text-center text-xs text-text-tertiary">
                 No historical earnings data available
               </p>
             )}
             {earningsDetail.earningsHistory.length > 0 && (
-              <div className="mt-2 flex justify-center gap-4 text-[10px] text-zinc-400">
+              <div className="mt-2 flex justify-center gap-4 text-[10px] text-text-tertiary">
                 {earningsDetail.earningsHistory.map((e) => (
                   <span key={e.quarter} className="tabular-nums">
                     {e.quarter}:{" "}
                     <span
                       className={
                         e.surprisePercent != null && e.surprisePercent >= 0
-                          ? "font-medium text-emerald-500"
-                          : "font-medium text-red-500"
+                          ? "font-medium text-success"
+                          : "font-medium text-danger"
                       }
                     >
                       {e.surprisePercent != null
@@ -252,11 +253,11 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                 ))}
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Revenue Trend Chart */}
-          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <Card className="p-4">
+            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
               Revenue & Net Income Trend
             </h4>
             {earningsDetail.quarterlyRevenue.length > 0 ? (
@@ -273,20 +274,20 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                     strokeDasharray="3 3"
                     vertical={false}
                     stroke="currentColor"
-                    className="text-zinc-200 dark:text-zinc-700"
+                    className="text-border-primary"
                   />
                   <XAxis
                     dataKey="quarter"
                     tick={{ fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
-                    className="text-zinc-500"
+                    className="text-text-secondary"
                   />
                   <YAxis
                     tick={{ fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
-                    className="text-zinc-500"
+                    className="text-text-secondary"
                     tickFormatter={(v: number) => {
                       if (v >= 1e9) return `$${(v / 1e9).toFixed(0)}B`;
                       if (v >= 1e6) return `$${(v / 1e6).toFixed(0)}M`;
@@ -297,7 +298,9 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                     contentStyle={{
                       fontSize: 12,
                       borderRadius: 8,
-                      border: "1px solid #e4e4e7",
+                      border: "1px solid var(--border-primary)",
+                      background: "var(--surface-primary)",
+                      color: "var(--text-primary)",
                     }}
                     formatter={(value, name) => [
                       typeof value === "number" ? formatRevenue(value) : "—",
@@ -306,7 +309,7 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                   />
                   <Bar
                     dataKey="revenue"
-                    fill="#6366f1"
+                    fill="var(--accent)"
                     radius={[2, 2, 0, 0]}
                     barSize={28}
                     name="revenue"
@@ -314,19 +317,19 @@ export function EarningsTab({ ticker }: EarningsTabProps) {
                   <Line
                     type="monotone"
                     dataKey="netIncome"
-                    stroke="#10b981"
+                    stroke="var(--success)"
                     strokeWidth={2}
-                    dot={{ r: 3, fill: "#10b981" }}
+                    dot={{ r: 3, fill: "var(--success)" }}
                     name="netIncome"
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
-              <p className="py-4 text-center text-xs text-zinc-400">
+              <p className="py-4 text-center text-xs text-text-tertiary">
                 No revenue data available
               </p>
             )}
-          </div>
+          </Card>
         </>
       ) : null}
     </div>

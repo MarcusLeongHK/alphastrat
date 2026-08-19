@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { AnalystData } from "@/lib/market/types";
 import type { AdanosSource, RecommendationPeriod, RecommendationTrend, SocialSentimentData } from "./types";
 import { ratingColor, formatRating } from "./utils";
+import { Card } from "@/app/components/ui/card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 function periodLabel(period: string): string {
   if (period === "0m") return "Current";
@@ -17,16 +19,16 @@ function RecBar({ data }: { data: RecommendationPeriod }) {
   const total = data.strongBuy + data.buy + data.hold + data.sell + data.strongSell;
   if (total === 0) return null;
   const segments = [
-    { count: data.strongBuy, color: "bg-emerald-600", label: "Strong Buy" },
-    { count: data.buy, color: "bg-emerald-400", label: "Buy" },
-    { count: data.hold, color: "bg-amber-400", label: "Hold" },
-    { count: data.sell, color: "bg-red-400", label: "Sell" },
-    { count: data.strongSell, color: "bg-red-600", label: "Strong Sell" },
+    { count: data.strongBuy, color: "bg-success", label: "Strong Buy" },
+    { count: data.buy, color: "bg-success/70", label: "Buy" },
+    { count: data.hold, color: "bg-warning", label: "Hold" },
+    { count: data.sell, color: "bg-danger/70", label: "Sell" },
+    { count: data.strongSell, color: "bg-danger", label: "Strong Sell" },
   ];
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
-        <span className="w-16 shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="w-16 shrink-0 text-[10px] text-text-tertiary">
           {periodLabel(data.period)}
         </span>
         <div className="flex h-4 flex-1 overflow-hidden rounded">
@@ -44,7 +46,7 @@ function RecBar({ data }: { data: RecommendationPeriod }) {
               ),
           )}
         </div>
-        <span className="w-8 shrink-0 text-right text-[10px] text-zinc-400">
+        <span className="w-8 shrink-0 text-right text-[10px] text-text-tertiary">
           {total}
         </span>
       </div>
@@ -66,15 +68,15 @@ const colorMap = {
 } as const;
 
 function sentimentLabel(score: number): { text: string; color: string } {
-  if (score > 0.2) return { text: "Bullish", color: "text-emerald-500" };
-  if (score < -0.2) return { text: "Bearish", color: "text-red-500" };
-  return { text: "Neutral", color: "text-amber-500" };
+  if (score > 0.2) return { text: "Bullish", color: "text-success" };
+  if (score < -0.2) return { text: "Bearish", color: "text-danger" };
+  return { text: "Neutral", color: "text-warning" };
 }
 
 function trendLabel(trend: string): { text: string; color: string } {
-  if (trend === "rising") return { text: "Rising", color: "text-emerald-500" };
-  if (trend === "falling") return { text: "Falling", color: "text-red-500" };
-  return { text: "Stable", color: "text-zinc-400" };
+  if (trend === "rising") return { text: "Rising", color: "text-success" };
+  if (trend === "falling") return { text: "Falling", color: "text-danger" };
+  return { text: "Stable", color: "text-text-tertiary" };
 }
 
 function formatCount(n: number): string {
@@ -103,46 +105,46 @@ function SentimentSourceCard({
         <div className={`text-[10px] font-semibold uppercase tracking-wider ${c.label}`}>
           {label}
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+        <div className="flex items-center gap-1.5 text-[10px] text-text-tertiary">
           <span>{formatCount(source.mentions)} mentions</span>
-          <span className="text-zinc-300 dark:text-zinc-600">|</span>
+          <span className="text-border-secondary">|</span>
           <span>{source.periodDays}d</span>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center">
-          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Buzz</div>
-          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+          <div className="text-[10px] text-text-tertiary">Buzz</div>
+          <div className="text-lg font-bold tabular-nums text-text-primary">
             {source.buzzScore.toFixed(1)}
           </div>
           <div className={`text-[10px] font-medium ${trend.color}`}>{trend.text}</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Sentiment</div>
+          <div className="text-[10px] text-text-tertiary">Sentiment</div>
           <div className={`text-lg font-bold tabular-nums ${sent.color}`}>
             {source.sentimentScore > 0 ? "+" : ""}{source.sentimentScore.toFixed(2)}
           </div>
           <div className={`text-[10px] ${sent.color}`}>{sent.text}</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Engagement</div>
-          <div className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+          <div className="text-[10px] text-text-tertiary">Engagement</div>
+          <div className="text-lg font-bold tabular-nums text-text-primary">
             {formatCount(source.totalUpvotes ?? source.uniqueTweets ?? 0)}
           </div>
-          <div className="text-[10px] text-zinc-400">
+          <div className="text-[10px] text-text-tertiary">
             {source.totalUpvotes ? "upvotes" : "tweets"}
           </div>
         </div>
       </div>
       <div className="mt-3">
         <div className="flex h-3 overflow-hidden rounded-full">
-          <div className="bg-emerald-500 transition-all" style={{ width: `${source.bullishPct}%` }} />
-          <div className="bg-zinc-300 transition-all dark:bg-zinc-600" style={{ width: `${100 - source.bullishPct - source.bearishPct}%` }} />
-          <div className="bg-red-500 transition-all" style={{ width: `${source.bearishPct}%` }} />
+          <div className="bg-success transition-all" style={{ width: `${source.bullishPct}%` }} />
+          <div className="bg-border-secondary transition-all" style={{ width: `${100 - source.bullishPct - source.bearishPct}%` }} />
+          <div className="bg-danger transition-all" style={{ width: `${source.bearishPct}%` }} />
         </div>
         <div className="mt-0.5 flex justify-between text-[10px]">
-          <span className="text-emerald-500">{source.bullishPct.toFixed(0)}% Bullish</span>
-          <span className="text-red-500">{source.bearishPct.toFixed(0)}% Bearish</span>
+          <span className="text-success">{source.bullishPct.toFixed(0)}% Bullish</span>
+          <span className="text-danger">{source.bearishPct.toFixed(0)}% Bearish</span>
         </div>
       </div>
       {detail}
@@ -213,12 +215,12 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Recommendation Trend */}
-      <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+      <Card className="p-3">
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Analyst Recommendation Trend
         </h4>
         {sentimentLoading ? (
-          <div className="h-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-24" />
         ) : recTrend && recTrend.trend.length > 0 ? (
           <div className="flex flex-col gap-2">
             {recTrend.trend.map((period) => (
@@ -226,38 +228,38 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
             ))}
             <div className="mt-1 flex flex-wrap gap-2 text-[9px]">
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-sm bg-emerald-600" /> Strong Buy
+                <span className="inline-block h-2 w-2 rounded-sm bg-success" /> Strong Buy
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-sm bg-emerald-400" /> Buy
+                <span className="inline-block h-2 w-2 rounded-sm bg-success/70" /> Buy
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-sm bg-amber-400" /> Hold
+                <span className="inline-block h-2 w-2 rounded-sm bg-warning" /> Hold
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-sm bg-red-400" /> Sell
+                <span className="inline-block h-2 w-2 rounded-sm bg-danger/70" /> Sell
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-sm bg-red-600" /> Strong Sell
+                <span className="inline-block h-2 w-2 rounded-sm bg-danger" /> Strong Sell
               </span>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-text-tertiary">
             No recommendation trend data available
           </p>
         )}
-      </div>
+      </Card>
 
       {/* Sentiment Summary */}
-      <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+      <Card className="p-3">
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Sentiment Summary
         </h4>
         {analyst?.recommendationKey ? (
           <div className="flex flex-col gap-3">
             <div className="text-center">
-              <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+              <div className="text-[10px] text-text-tertiary">
                 Wall Street Consensus
               </div>
               <div
@@ -265,7 +267,7 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
               >
                 {formatRating(analyst.recommendationKey)}
               </div>
-              <div className="text-[10px] text-zinc-400">
+              <div className="text-[10px] text-text-tertiary">
                 {analyst.numberOfAnalysts} analysts
               </div>
             </div>
@@ -281,7 +283,7 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
               const bearDiff = curBear - prevBear;
               if (bullDiff === 0 && bearDiff === 0) return null;
               return (
-                <div className="rounded bg-zinc-100 px-2 py-1.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                <div className="rounded bg-surface-tertiary px-2 py-1.5 text-xs text-text-secondary">
                   {bullDiff > 0
                     ? `+${bullDiff} analyst${bullDiff > 1 ? "s" : ""} moved to Buy/Strong Buy this month`
                     : bullDiff < 0
@@ -297,7 +299,7 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
               );
             })()}
             {socialLoading ? (
-              <div className="h-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+              <Skeleton className="h-16" />
             ) : socialSentiment && (socialSentiment.reddit || socialSentiment.twitter) ? (
               <>
                 {socialSentiment.reddit && (
@@ -327,10 +329,10 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
                       socialSentiment.twitter.topTweets && socialSentiment.twitter.topTweets.length > 0 ? (
                         <div className="mt-2 flex flex-col gap-1">
                           {socialSentiment.twitter.topTweets.slice(0, 3).map((tweet, i) => (
-                            <div key={i} className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                            <div key={i} className="text-[10px] text-text-secondary">
                               <span className="font-medium text-sky-600 dark:text-sky-400">@{tweet.author}</span>
                               {" "}{tweet.textSnippet.slice(0, 120)}{tweet.textSnippet.length > 120 ? "..." : ""}
-                              <span className="ml-1 text-zinc-300 dark:text-zinc-600">
+                              <span className="ml-1 text-text-tertiary">
                                 {tweet.likes > 0 && `${tweet.likes} likes`}
                               </span>
                             </div>
@@ -345,37 +347,37 @@ export function SentimentTab({ ticker, analyst }: SentimentTabProps) {
                     <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
                       Retail vs Institutional
                     </div>
-                    <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+                    <p className="text-xs leading-relaxed text-text-primary">
                       {socialSentiment.comparison}
                     </p>
                   </div>
                 )}
                 {socialSentiment.explain?.explanation && (
-                  <div className="mt-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                    <h4 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                  <Card className="mt-4 p-4">
+                    <h4 className="text-xs font-medium text-text-secondary">
                       AI Trend Explanation
                     </h4>
-                    <p className="mt-2 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                    <p className="mt-2 text-sm leading-relaxed text-text-primary">
                       {socialSentiment.explain.explanation}
                     </p>
-                    <p className="mt-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
+                    <p className="mt-1.5 text-[10px] text-text-tertiary">
                       Generated by Llama 3.1 via Adanos
                     </p>
-                  </div>
+                  </Card>
                 )}
               </>
             ) : (
-              <div className="rounded bg-zinc-100 px-2 py-1.5 text-xs text-zinc-400 dark:bg-zinc-800">
+              <div className="rounded bg-surface-tertiary px-2 py-1.5 text-xs text-text-tertiary">
                 No social sentiment data available
               </div>
             )}
           </div>
         ) : (
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-text-tertiary">
             No analyst data available
           </p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import type { AnalystData, EarningsData, QuoteData } from "@/lib/market/types";
 import { formatUsd, formatRevenue, ratingColor, formatRating } from "./utils";
+import { Card } from "@/app/components/ui/card";
 
 function formatMarketCap(value: number): string {
   if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
@@ -15,13 +16,13 @@ function AnalystMeter({ mean }: { mean: number }) {
   const labels = ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"];
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="relative h-3 w-full overflow-hidden rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500">
+      <div className="relative h-3 w-full overflow-hidden rounded-full bg-gradient-to-r from-success via-warning to-danger">
         <div
-          className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-white shadow ring-1 ring-zinc-900/20"
+          className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-white shadow ring-1 ring-black/20"
           style={{ left: `${position}%` }}
         />
       </div>
-      <div className="flex justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
+      <div className="flex justify-between text-[10px] text-text-tertiary">
         {labels.map((l) => (
           <span key={l}>{l}</span>
         ))}
@@ -40,8 +41,8 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Analyst Ratings */}
-      <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+      <Card className="p-3">
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Analyst Consensus
         </h4>
         {analyst?.recommendationKey ? (
@@ -52,7 +53,7 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
               >
                 {formatRating(analyst.recommendationKey)}
               </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="text-xs text-text-secondary">
                 {analyst.numberOfAnalysts} analysts
               </span>
             </div>
@@ -62,26 +63,26 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
             {analyst.targetMeanPrice != null && (
               <div className="mt-1 grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  <div className="text-[10px] text-text-tertiary">
                     Low
                   </div>
-                  <div className="text-sm font-medium tabular-nums text-zinc-700 dark:text-zinc-300">
+                  <div className="text-sm font-medium tabular-nums text-text-primary">
                     ${formatUsd(analyst.targetLowPrice ?? 0)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  <div className="text-[10px] text-text-tertiary">
                     Mean Target
                   </div>
-                  <div className="text-sm font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                  <div className="text-sm font-bold tabular-nums text-text-primary">
                     ${formatUsd(analyst.targetMeanPrice)}
                   </div>
                   {quote && (
                     <div
                       className={`text-[10px] font-medium ${
                         analyst.targetMeanPrice > quote.price
-                          ? "text-emerald-500"
-                          : "text-red-500"
+                          ? "text-success"
+                          : "text-danger"
                       }`}
                     >
                       {analyst.targetMeanPrice > quote.price ? "+" : ""}
@@ -95,10 +96,10 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
                   )}
                 </div>
                 <div>
-                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  <div className="text-[10px] text-text-tertiary">
                     High
                   </div>
-                  <div className="text-sm font-medium tabular-nums text-zinc-700 dark:text-zinc-300">
+                  <div className="text-sm font-medium tabular-nums text-text-primary">
                     ${formatUsd(analyst.targetHighPrice ?? 0)}
                   </div>
                 </div>
@@ -106,18 +107,18 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
             )}
           </div>
         ) : (
-          <p className="text-xs text-zinc-400">No analyst data available</p>
+          <p className="text-xs text-text-tertiary">No analyst data available</p>
         )}
-      </div>
+      </Card>
 
       {/* Earnings Info */}
-      <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+      <Card className="p-3">
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Next Earnings
         </h4>
         {earning?.earningsDate ? (
           <div className="flex flex-col gap-2">
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="text-lg font-bold text-text-primary">
               {new Date(earning.earningsDate).toLocaleDateString(undefined, {
                 weekday: "short",
                 month: "short",
@@ -127,33 +128,33 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                <div className="text-[10px] text-text-tertiary">
                   EPS Estimate
                 </div>
-                <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                <div className="text-sm font-medium tabular-nums text-text-primary">
                   {earning.epsEstimate != null
                     ? `$${earning.epsEstimate.toFixed(2)}`
                     : "—"}
                 </div>
                 {earning.epsLow != null && earning.epsHigh != null && (
-                  <div className="text-[10px] tabular-nums text-zinc-400">
+                  <div className="text-[10px] tabular-nums text-text-tertiary">
                     Range: ${earning.epsLow.toFixed(2)} – $
                     {earning.epsHigh.toFixed(2)}
                   </div>
                 )}
               </div>
               <div>
-                <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                <div className="text-[10px] text-text-tertiary">
                   Revenue Estimate
                 </div>
-                <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                <div className="text-sm font-medium tabular-nums text-text-primary">
                   {earning.revenueEstimate != null
                     ? formatRevenue(earning.revenueEstimate)
                     : "—"}
                 </div>
                 {earning.revenueLow != null &&
                   earning.revenueHigh != null && (
-                    <div className="text-[10px] tabular-nums text-zinc-400">
+                    <div className="text-[10px] tabular-nums text-text-tertiary">
                       Range: {formatRevenue(earning.revenueLow)} –{" "}
                       {formatRevenue(earning.revenueHigh)}
                     </div>
@@ -162,19 +163,19 @@ export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
             </div>
             {earning.marketCap != null && (
               <div className="mt-1">
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                <span className="text-[10px] text-text-tertiary">
                   Market Cap:{" "}
                 </span>
-                <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                <span className="text-xs font-medium text-text-primary">
                   {formatMarketCap(earning.marketCap)}
                 </span>
               </div>
             )}
           </div>
         ) : (
-          <p className="text-xs text-zinc-400">No earnings date available</p>
+          <p className="text-xs text-text-tertiary">No earnings date available</p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import type { QuoteData, EarningsData, AnalystData } from "@/lib/market/types";
 import { removeFromWatchlist, type ActionResult } from "./actions";
 import { TickerDetailPanel } from "./ticker-detail-panel";
 import { BottomSheet } from "./bottom-sheet";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 const initialState: ActionResult = {};
 
@@ -22,12 +23,12 @@ function DeleteButton({ id }: { id: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+        className="text-sm text-danger hover:opacity-80 disabled:opacity-50"
       >
         {isPending ? "..." : "Remove"}
       </button>
       {state.error && (
-        <span className="ml-2 text-xs text-red-500">{state.error}</span>
+        <span className="ml-2 text-xs text-danger">{state.error}</span>
       )}
     </form>
   );
@@ -41,9 +42,9 @@ function formatUsd(value: number): string {
 }
 
 function changeColor(value: number): string {
-  if (value > 0) return "text-emerald-500";
-  if (value < 0) return "text-red-500";
-  return "text-zinc-700 dark:text-zinc-300";
+  if (value > 0) return "text-success";
+  if (value < 0) return "text-danger";
+  return "text-text-secondary";
 }
 
 function formatEarningsDate(dateStr: string): string {
@@ -68,10 +69,10 @@ function formatRating(key: string): string {
 }
 
 function ratingColor(key: string | null | undefined): string {
-  if (!key) return "text-zinc-700 dark:text-zinc-300";
-  if (key === "strong_buy" || key === "buy") return "text-emerald-500";
-  if (key === "hold") return "text-amber-500";
-  return "text-red-500";
+  if (!key) return "text-text-secondary";
+  if (key === "strong_buy" || key === "buy") return "text-success";
+  if (key === "hold") return "text-warning";
+  return "text-danger";
 }
 
 function isWithinDays(dateStr: string, days: number): boolean {
@@ -112,10 +113,10 @@ function countdownLabel(dateStr: string): string {
 
 function countdownColor(dateStr: string): string {
   const days = daysUntil(dateStr);
-  if (days < 0) return "text-zinc-400 dark:text-zinc-500";
-  if (days <= 3) return "text-red-500";
-  if (days <= 7) return "text-amber-500";
-  return "text-blue-500 dark:text-blue-400";
+  if (days < 0) return "text-text-tertiary";
+  if (days <= 3) return "text-danger";
+  if (days <= 7) return "text-warning";
+  return "text-accent";
 }
 
 function EarningsCalendar({
@@ -131,7 +132,7 @@ function EarningsCalendar({
 
   if (withDates.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-text-secondary">
         No upcoming earnings dates available.
       </p>
     );
@@ -152,7 +153,7 @@ function EarningsCalendar({
       {Array.from(grouped.entries()).map(([date, items]) => (
         <div key={date}>
           <div className="mb-2 flex items-center gap-3">
-            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            <span className="text-sm font-medium text-text-primary">
               {formatEarningsDate(date)}
             </span>
             <span
@@ -161,29 +162,29 @@ function EarningsCalendar({
               {countdownLabel(date)}
             </span>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="overflow-x-auto rounded-lg border border-border-primary">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
-                  <th className="px-3 py-2 text-left font-medium text-zinc-500 dark:text-zinc-400">
+                <tr className="border-b border-border-primary bg-surface-secondary">
+                  <th className="px-3 py-2 text-left font-medium text-text-secondary">
                     Ticker
                   </th>
-                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                  <th className="px-3 py-2 text-right font-medium text-text-secondary">
                     Price
                   </th>
-                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                  <th className="px-3 py-2 text-right font-medium text-text-secondary">
                     Mkt Cap
                   </th>
-                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                  <th className="px-3 py-2 text-right font-medium text-text-secondary">
                     EPS Est.
                   </th>
-                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                  <th className="px-3 py-2 text-right font-medium text-text-secondary">
                     EPS Range
                   </th>
-                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                  <th className="px-3 py-2 text-right font-medium text-text-secondary">
                     Rev Est.
                   </th>
-                  <th className="px-3 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
+                  <th className="px-3 py-2 text-right font-medium text-text-secondary">
                     Rev Range
                   </th>
                 </tr>
@@ -194,37 +195,37 @@ function EarningsCalendar({
                   return (
                     <tr
                       key={e.ticker}
-                      className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-800/50"
+                      className="border-b border-border-primary/60 last:border-b-0"
                     >
-                      <td className="px-3 py-2.5 font-mono font-semibold text-zinc-900 dark:text-zinc-100">
+                      <td className="px-3 py-2.5 font-mono font-semibold text-text-primary">
                         {e.ticker}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-text-primary">
                         {quote ? `$${quote.price.toFixed(2)}` : "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-text-primary">
                         {e.marketCap != null
                           ? formatMarketCap(e.marketCap)
                           : quote?.marketCap != null
                             ? formatMarketCap(quote.marketCap)
                             : "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-text-primary">
                         {e.epsEstimate != null
                           ? `$${e.epsEstimate.toFixed(2)}`
                           : "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-text-secondary">
                         {e.epsLow != null && e.epsHigh != null
                           ? `$${e.epsLow.toFixed(2)} – $${e.epsHigh.toFixed(2)}`
                           : "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-text-primary">
                         {e.revenueEstimate != null
                           ? formatRevenue(e.revenueEstimate)
                           : "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-text-secondary">
                         {e.revenueLow != null && e.revenueHigh != null
                           ? `${formatRevenue(e.revenueLow)} – ${formatRevenue(e.revenueHigh)}`
                           : "—"}
@@ -420,7 +421,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-text-secondary">
         No tickers in your watchlist. Add one above to get started.
       </p>
     );
@@ -436,13 +437,13 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="flex items-center gap-2 text-xs text-text-secondary">
         {lastUpdated && <span>Updated {secondsAgo}s ago</span>}
         <button
           type="button"
           onClick={handleManualRefresh}
           disabled={refreshing}
-          className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          className="rounded p-1 text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:opacity-50"
           title="Refresh quotes"
         >
           <RefreshIcon spinning={refreshing} />
@@ -450,12 +451,12 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
       </div>
 
       {quotesError && (
-        <p className="text-sm text-red-600 dark:text-red-400">
+        <p className="text-sm text-danger">
           {quotesError}
         </p>
       )}
       {earningsError && (
-        <p className="text-sm text-red-600 dark:text-red-400">
+        <p className="text-sm text-danger">
           {earningsError}
         </p>
       )}
@@ -465,15 +466,15 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
           ? [0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-[80px] rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+                className="h-[80px] rounded-lg border border-border-primary p-4"
               >
                 <div className="flex items-center justify-between">
-                  <div className="h-4 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-4 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-20" />
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <div className="h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-3 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-16" />
                 </div>
               </div>
             ))
@@ -491,10 +492,10 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                   role="button"
                   tabIndex={0}
                   aria-expanded={isExpanded}
-                  className={`flex min-h-[44px] w-full cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-colors active:bg-zinc-50 dark:active:bg-zinc-900/20 ${
+                  className={`flex min-h-[44px] w-full cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-colors active:bg-surface-secondary ${
                     isExpanded
-                      ? "bg-zinc-50 border-zinc-200 dark:bg-zinc-900/30 dark:border-zinc-800"
-                      : "border-zinc-200 dark:border-zinc-800"
+                      ? "bg-surface-secondary border-border-primary"
+                      : "border-border-primary"
                   }`}
                   onClick={() =>
                     setExpandedTicker(isExpanded ? null : item.ticker)
@@ -507,7 +508,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 font-mono text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    <span className="flex items-center gap-1.5 font-mono text-base font-semibold text-text-primary">
                       <span
                         className={`inline-block text-[10px] transition-transform ${
                           isExpanded ? "rotate-90" : ""
@@ -517,7 +518,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                       </span>
                       {item.ticker}
                     </span>
-                    <span className="tabular-nums text-base text-zinc-700 dark:text-zinc-300">
+                    <span className="tabular-nums text-base text-text-primary">
                       {quote ? `$${quote.price.toFixed(2)}` : "—"}
                     </span>
                   </div>
@@ -527,7 +528,7 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                       className={`tabular-nums ${
                         quote
                           ? changeColor(quote.change)
-                          : "text-zinc-700 dark:text-zinc-300"
+                          : "text-text-primary"
                       }`}
                     >
                       {quote
@@ -545,12 +546,12 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="flex items-center justify-between text-xs text-text-secondary">
                     <span
                       className={
                         upcoming
-                          ? "font-medium text-amber-500"
-                          : "text-zinc-500 dark:text-zinc-400"
+                          ? "font-medium text-warning"
+                          : "text-text-secondary"
                       }
                     >
                       {earning?.earningsDate
@@ -575,13 +576,15 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
         title={expandedTicker ?? ""}
       >
         {expandedTicker && (
-          <TickerDetailPanel
-            key={expandedTicker}
-            ticker={expandedTicker}
-            quote={quoteByTicker.get(expandedTicker) ?? undefined}
-            earning={earningsByTicker.get(expandedTicker) ?? undefined}
-            analyst={analystByTicker.get(expandedTicker) ?? undefined}
-          />
+          <div className="animate-fade-in">
+            <TickerDetailPanel
+              key={expandedTicker}
+              ticker={expandedTicker}
+              quote={quoteByTicker.get(expandedTicker) ?? undefined}
+              earning={earningsByTicker.get(expandedTicker) ?? undefined}
+              analyst={analystByTicker.get(expandedTicker) ?? undefined}
+            />
+          </div>
         )}
       </BottomSheet>
 
@@ -589,29 +592,29 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              <th className="pb-2 pr-4 text-left font-medium text-zinc-500 dark:text-zinc-400">
+            <tr className="border-b border-border-primary">
+              <th className="pb-2 pr-4 text-left font-medium text-text-secondary">
                 Ticker
               </th>
-              <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+              <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
                 Price
               </th>
-              <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+              <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
                 Change
               </th>
-              <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+              <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
                 Next Earnings
               </th>
-              <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+              <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
                 EPS Est.
               </th>
-              <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+              <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
                 Rating
               </th>
-              <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+              <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
                 Price Target
               </th>
-              <th className="pb-2 text-right font-medium text-zinc-500 dark:text-zinc-400"></th>
+              <th className="pb-2 text-right font-medium text-text-secondary"></th>
             </tr>
           </thead>
           <tbody>
@@ -619,31 +622,31 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
               ? items.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-zinc-100 dark:border-zinc-800/50"
+                    className="border-b border-border-primary/60"
                   >
                     <td className="py-3 pr-4">
-                      <div className="h-4 w-14 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="h-4 w-14" />
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="ml-auto h-4 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="ml-auto h-4 w-16" />
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="ml-auto h-4 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="ml-auto h-4 w-20" />
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="ml-auto h-4 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="ml-auto h-4 w-24" />
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="ml-auto h-4 w-12 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="ml-auto h-4 w-12" />
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="ml-auto h-4 w-12 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="ml-auto h-4 w-12" />
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="ml-auto h-4 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="ml-auto h-4 w-20" />
                     </td>
                     <td className="py-3">
-                      <div className="ml-auto h-4 w-14 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                      <Skeleton className="ml-auto h-4 w-14" />
                     </td>
                   </tr>
                 ))
@@ -659,16 +662,16 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                   return (
                     <React.Fragment key={item.id}>
                     <tr
-                      className={`border-b border-zinc-100 dark:border-zinc-800/50 cursor-pointer transition-colors ${
+                      className={`border-b border-border-primary/60 cursor-pointer transition-colors ${
                         isExpanded
-                          ? "bg-zinc-50 dark:bg-zinc-900/30"
-                          : "hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20"
+                          ? "bg-surface-secondary"
+                          : "hover:bg-surface-tertiary/50"
                       }`}
                       onClick={() =>
                         setExpandedTicker(isExpanded ? null : item.ticker)
                       }
                     >
-                      <td className="py-3 pr-4 font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                      <td className="py-3 pr-4 font-mono font-medium text-text-primary">
                         <span className="flex items-center gap-1.5">
                           <span
                             className={`inline-block text-[10px] transition-transform ${
@@ -680,12 +683,12 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                           {item.ticker}
                         </span>
                       </td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-primary">
                         {quote ? `$${quote.price.toFixed(2)}` : "—"}
                       </td>
                       <td
                         className={`py-3 pr-4 text-right tabular-nums ${
-                          quote ? changeColor(quote.change) : "text-zinc-700 dark:text-zinc-300"
+                          quote ? changeColor(quote.change) : "text-text-primary"
                         }`}
                       >
                         {quote
@@ -697,15 +700,15 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                       <td
                         className={`py-3 pr-4 text-right tabular-nums ${
                           upcoming
-                            ? "text-amber-500 font-medium"
-                            : "text-zinc-700 dark:text-zinc-300"
+                            ? "text-warning font-medium"
+                            : "text-text-primary"
                         }`}
                       >
                         {earning?.earningsDate
                           ? formatEarningsDate(earning.earningsDate)
                           : "—"}
                       </td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-primary">
                         {earning?.epsEstimate !== null &&
                         earning?.epsEstimate !== undefined
                           ? `$${earning.epsEstimate.toFixed(2)}`
@@ -716,17 +719,17 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                           ? formatRating(analyst.recommendationKey)
                           : "—"}
                         {analyst?.numberOfAnalysts != null && (
-                          <span className="ml-1 text-zinc-400 dark:text-zinc-500 font-normal">
+                          <span className="ml-1 text-text-tertiary font-normal">
                             ({analyst.numberOfAnalysts})
                           </span>
                         )}
                       </td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-xs text-zinc-700 dark:text-zinc-300">
+                      <td className="py-3 pr-4 text-right tabular-nums text-xs text-text-primary">
                         {analyst?.targetMeanPrice != null ? (
                           <span>
                             ${formatUsd(analyst.targetMeanPrice)}
                             {analyst.targetLowPrice != null && analyst.targetHighPrice != null && (
-                              <span className="ml-1 text-zinc-400 dark:text-zinc-500">
+                              <span className="ml-1 text-text-tertiary">
                                 ({formatUsd(analyst.targetLowPrice)}–{formatUsd(analyst.targetHighPrice)})
                               </span>
                             )}
@@ -743,13 +746,15 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
                     {isExpanded && (
                       <tr>
                         <td colSpan={8} className="p-0">
-                          <TickerDetailPanel
-                            key={item.ticker}
-                            ticker={item.ticker}
-                            quote={quote}
-                            earning={earning}
-                            analyst={analyst}
-                          />
+                          <div className="animate-fade-in">
+                            <TickerDetailPanel
+                              key={item.ticker}
+                              ticker={item.ticker}
+                              quote={quote}
+                              earning={earning}
+                              analyst={analyst}
+                            />
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -761,8 +766,8 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
       </div>
 
       {earnings && earnings.length > 0 && (
-        <div className="mt-6 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-          <h3 className="mb-4 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <div className="mt-6 rounded-lg border border-border-primary p-4">
+          <h3 className="mb-4 text-sm font-medium text-text-primary">
             Earnings Calendar
           </h3>
           <EarningsCalendar earnings={earnings} quotes={quotes} />

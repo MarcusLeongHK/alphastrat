@@ -3,6 +3,8 @@
 import { type ReactNode, useEffect, useState } from "react";
 import type { NewsArticle, NewsTheme, TickerNews } from "./types";
 import { timeAgo } from "./utils";
+import { Card } from "@/app/components/ui/card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 function renderCitedSummary(
   summary: string,
@@ -21,7 +23,7 @@ function renderCitedSummary(
             href={article.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="mx-0.5 font-mono text-[10px] text-blue-500 hover:text-blue-400 hover:underline"
+            className="mx-0.5 font-mono text-[10px] text-accent hover:underline"
           >
             [{idx + 1}]
           </a>
@@ -58,8 +60,8 @@ function NewsThemeChips({
             onClick={() => { setSelectedIndex(i); setShowAllSources(false); }}
             className={`min-h-[44px] shrink-0 rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
               i === selectedIndex
-                ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                : "border-zinc-300 text-zinc-600 hover:border-zinc-400 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-500"
+                ? "border-accent bg-accent text-white"
+                : "border-border-secondary text-text-secondary hover:border-text-tertiary"
             }`}
           >
             {theme.label}
@@ -69,14 +71,14 @@ function NewsThemeChips({
 
       {/* Selected theme detail */}
       {selected && (
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+        <Card className="p-4">
+          <p className="text-sm leading-relaxed text-text-primary">
             {renderCitedSummary(selected.detail, articles)}
           </p>
 
           {/* Filtered sources */}
-          <div className="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-700">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
+          <div className="mt-3 border-t border-border-primary pt-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary mb-1.5">
               Related Sources
             </div>
             <div className="flex flex-col gap-1">
@@ -90,15 +92,15 @@ function NewsThemeChips({
                     href={article.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-baseline gap-1.5 text-xs text-zinc-500 hover:text-blue-500 dark:text-zinc-400 dark:hover:text-blue-400 transition-colors"
+                    className="group flex items-baseline gap-1.5 text-xs text-text-secondary hover:text-accent transition-colors"
                   >
-                    <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                    <span className="font-mono text-[10px] text-text-tertiary">
                       [{originalIndex + 1}]
                     </span>
                     <span className="truncate group-hover:underline">
                       {article.title}
                     </span>
-                    <span className="hidden shrink-0 text-zinc-300 dark:text-zinc-600 md:inline">
+                    <span className="hidden shrink-0 text-text-tertiary md:inline">
                       — {article.publisher}
                     </span>
                   </a>
@@ -108,7 +110,7 @@ function NewsThemeChips({
             {!showAllSources && filteredArticles.length < articles.length && (
               <button
                 onClick={() => setShowAllSources(true)}
-                className="mt-2 text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                className="mt-2 text-xs font-medium text-text-secondary hover:text-text-primary"
               >
                 Show all {articles.length} sources
               </button>
@@ -116,13 +118,13 @@ function NewsThemeChips({
             {showAllSources && (
               <button
                 onClick={() => setShowAllSources(false)}
-                className="mt-2 text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                className="mt-2 text-xs font-medium text-text-secondary hover:text-text-primary"
               >
                 Show related only
               </button>
             )}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -165,10 +167,7 @@ export function NewsTab({ ticker }: NewsTabProps) {
       {newsLoading ? (
         <div className="flex flex-col gap-2">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-12 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800"
-            />
+            <Skeleton key={i} className="h-12" />
           ))}
         </div>
       ) : news ? (
@@ -181,15 +180,15 @@ export function NewsTab({ ticker }: NewsTabProps) {
             />
           ) : news.aiSummary && news.articles.length > 0 ? (
             /* Fallback: old cached data without themes */
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
-              <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            <Card className="p-4">
+              <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 <span aria-hidden="true">✦</span> News Summary
               </h4>
-              <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+              <p className="text-sm leading-relaxed text-text-primary">
                 {renderCitedSummary(news.aiSummary, news.articles)}
               </p>
-              <div className="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-700">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
+              <div className="mt-3 border-t border-border-primary pt-3">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary mb-1.5">
                   Sources
                 </div>
                 <div className="flex flex-col gap-1">
@@ -199,25 +198,25 @@ export function NewsTab({ ticker }: NewsTabProps) {
                       href={article.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-baseline gap-1.5 text-xs text-zinc-500 hover:text-blue-500 dark:text-zinc-400 dark:hover:text-blue-400 transition-colors"
+                      className="group flex items-baseline gap-1.5 text-xs text-text-secondary hover:text-accent transition-colors"
                     >
-                      <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                      <span className="font-mono text-[10px] text-text-tertiary">
                         [{i + 1}]
                       </span>
                       <span className="truncate group-hover:underline">
                         {article.title}
                       </span>
-                      <span className="hidden shrink-0 text-zinc-300 dark:text-zinc-600 md:inline">
+                      <span className="hidden shrink-0 text-text-tertiary md:inline">
                         — {article.publisher}, {timeAgo(article.publishedAt)}
                       </span>
                     </a>
                   ))}
                 </div>
               </div>
-            </div>
+            </Card>
           ) : news.articles.length > 0 ? (
-            <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-              <p className="text-xs text-zinc-400 mb-2">
+            <Card className="p-3">
+              <p className="text-xs text-text-tertiary mb-2">
                 Summary unavailable. Recent articles:
               </p>
               <div className="flex flex-col gap-1">
@@ -227,22 +226,22 @@ export function NewsTab({ ticker }: NewsTabProps) {
                     href={article.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-zinc-700 hover:text-blue-500 dark:text-zinc-300 dark:hover:text-blue-400"
+                    className="text-sm text-text-primary hover:text-accent"
                   >
                     {article.title}
-                    <span className="ml-1 text-xs text-zinc-400">
+                    <span className="ml-1 text-xs text-text-tertiary">
                       ({article.publisher})
                     </span>
                   </a>
                 ))}
               </div>
-            </div>
+            </Card>
           ) : (
-            <p className="text-xs text-zinc-400">No recent news found</p>
+            <p className="text-xs text-text-tertiary">No recent news found</p>
           )}
         </>
       ) : (
-        <p className="text-xs text-zinc-400">Unable to load news</p>
+        <p className="text-xs text-text-tertiary">Unable to load news</p>
       )}
     </div>
   );
