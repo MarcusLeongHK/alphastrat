@@ -1,0 +1,180 @@
+"use client";
+
+import type { AnalystData, EarningsData, QuoteData } from "@/lib/market/types";
+import { formatUsd, formatRevenue, ratingColor, formatRating } from "./utils";
+
+function formatMarketCap(value: number): string {
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+  return `$${value.toLocaleString()}`;
+}
+
+function AnalystMeter({ mean }: { mean: number }) {
+  const position = ((mean - 1) / 4) * 100;
+  const labels = ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"];
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="relative h-3 w-full overflow-hidden rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500">
+        <div
+          className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-white shadow ring-1 ring-zinc-900/20"
+          style={{ left: `${position}%` }}
+        />
+      </div>
+      <div className="flex justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
+        {labels.map((l) => (
+          <span key={l}>{l}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface OverviewTabProps {
+  quote: QuoteData | undefined;
+  analyst: AnalystData | undefined;
+  earning: EarningsData | undefined;
+}
+
+export function OverviewTab({ quote, analyst, earning }: OverviewTabProps) {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {/* Analyst Ratings */}
+      <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          Analyst Consensus
+        </h4>
+        {analyst?.recommendationKey ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-baseline justify-between">
+              <span
+                className={`text-lg font-bold ${ratingColor(analyst.recommendationKey)}`}
+              >
+                {formatRating(analyst.recommendationKey)}
+              </span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {analyst.numberOfAnalysts} analysts
+              </span>
+            </div>
+            {analyst.recommendationMean != null && (
+              <AnalystMeter mean={analyst.recommendationMean} />
+            )}
+            {analyst.targetMeanPrice != null && (
+              <div className="mt-1 grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    Low
+                  </div>
+                  <div className="text-sm font-medium tabular-nums text-zinc-700 dark:text-zinc-300">
+                    ${formatUsd(analyst.targetLowPrice ?? 0)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    Mean Target
+                  </div>
+                  <div className="text-sm font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                    ${formatUsd(analyst.targetMeanPrice)}
+                  </div>
+                  {quote && (
+                    <div
+                      className={`text-[10px] font-medium ${
+                        analyst.targetMeanPrice > quote.price
+                          ? "text-emerald-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {analyst.targetMeanPrice > quote.price ? "+" : ""}
+                      {(
+                        ((analyst.targetMeanPrice - quote.price) /
+                          quote.price) *
+                        100
+                      ).toFixed(1)}
+                      % upside
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    High
+                  </div>
+                  <div className="text-sm font-medium tabular-nums text-zinc-700 dark:text-zinc-300">
+                    ${formatUsd(analyst.targetHighPrice ?? 0)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-zinc-400">No analyst data available</p>
+        )}
+      </div>
+
+      {/* Earnings Info */}
+      <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          Next Earnings
+        </h4>
+        {earning?.earningsDate ? (
+          <div className="flex flex-col gap-2">
+            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              {new Date(earning.earningsDate).toLocaleDateString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  EPS Estimate
+                </div>
+                <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                  {earning.epsEstimate != null
+                    ? `$${earning.epsEstimate.toFixed(2)}`
+                    : "—"}
+                </div>
+                {earning.epsLow != null && earning.epsHigh != null && (
+                  <div className="text-[10px] tabular-nums text-zinc-400">
+                    Range: ${earning.epsLow.toFixed(2)} – $
+                    {earning.epsHigh.toFixed(2)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  Revenue Estimate
+                </div>
+                <div className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                  {earning.revenueEstimate != null
+                    ? formatRevenue(earning.revenueEstimate)
+                    : "—"}
+                </div>
+                {earning.revenueLow != null &&
+                  earning.revenueHigh != null && (
+                    <div className="text-[10px] tabular-nums text-zinc-400">
+                      Range: {formatRevenue(earning.revenueLow)} –{" "}
+                      {formatRevenue(earning.revenueHigh)}
+                    </div>
+                  )}
+              </div>
+            </div>
+            {earning.marketCap != null && (
+              <div className="mt-1">
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  Market Cap:{" "}
+                </span>
+                <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                  {formatMarketCap(earning.marketCap)}
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-zinc-400">No earnings date available</p>
+        )}
+      </div>
+    </div>
+  );
+}
