@@ -1,15 +1,36 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import type { AnalystData, EarningsData, QuoteData } from "@/lib/market/types";
 import type { Tab } from "./tabs/types";
 import { TabBar } from "@/app/components/ui/tab-bar";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { OverviewTab } from "./tabs/overview-tab";
 import { NewsTab } from "./tabs/news-tab";
 import { SentimentTab } from "./tabs/sentiment-tab";
 import { ThesisTab } from "./tabs/thesis-tab";
-import { EarningsTab } from "./tabs/earnings-tab";
-import { OptionsTab } from "./tabs/options-tab";
+
+function TabSkeleton() {
+  return (
+    <div className="space-y-3 py-2">
+      <Skeleton className="h-5 w-48" />
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-5 w-36" />
+      <Skeleton className="h-24 w-full" />
+    </div>
+  );
+}
+
+const EarningsTab = dynamic(
+  () => import("./tabs/earnings-tab").then((m) => ({ default: m.EarningsTab })),
+  { loading: () => <TabSkeleton /> }
+);
+
+const OptionsTab = dynamic(
+  () => import("./tabs/options-tab").then((m) => ({ default: m.OptionsTab })),
+  { loading: () => <TabSkeleton /> }
+);
 
 interface TickerDetailPanelProps {
   ticker: string;
