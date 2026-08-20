@@ -17,9 +17,14 @@ export async function signup(
 ): Promise<AuthResult> {
   const email = formData.get("email") as string | null;
   const password = formData.get("password") as string | null;
+  const accessCode = formData.get("accessCode") as string | null;
 
   if (!email || !password) {
     return { error: "Email and password are required." };
+  }
+
+  if (!accessCode?.trim()) {
+    return { error: "Access code is required." };
   }
 
   if (password.length < 6) {
@@ -27,6 +32,20 @@ export async function signup(
   }
 
   const supabase = await createClient();
+
+  const { data: claimed, error: rpcError } = await supabase.rpc(
+    "claim_access_code",
+    { input_code: accessCode.trim() }
+  );
+
+  if (rpcError) {
+    return { error: "Unable to verify access code. Please try again." };
+  }
+
+  if (!claimed) {
+    return { error: "Invalid access code or code has reached its usage limit." };
+  }
+
   const headersList = await headers();
   const origin = headersList.get("origin") ?? "http://localhost:3000";
 
@@ -71,7 +90,7 @@ export async function login(
   }
 
   revalidatePath("/", "layout");
-  redirect("/portfolio");
+  redirect("/watchlist");
 }
 
 export async function logout(): Promise<never> {

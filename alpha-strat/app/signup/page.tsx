@@ -29,6 +29,23 @@ export default function SignupPage() {
           <form action={formAction} className="mt-8 w-full space-y-4">
             <div>
               <label
+                htmlFor="accessCode"
+                className="block text-sm font-medium text-text-secondary"
+              >
+                Access Code
+              </label>
+              <input
+                id="accessCode"
+                name="accessCode"
+                type="text"
+                required
+                autoComplete="off"
+                placeholder="Enter your access code"
+                className="mt-1 w-full rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm uppercase text-text-primary placeholder:normal-case placeholder:text-text-tertiary focus:border-accent focus:outline-none"
+              />
+            </div>
+            <div>
+              <label
                 htmlFor="email"
                 className="block text-sm font-medium text-text-secondary"
               >
