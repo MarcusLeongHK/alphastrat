@@ -11,10 +11,10 @@ export default function Home() {
       </p>
       <div className="mt-8 flex gap-4">
         <Link
-          href="/portfolio"
+          href="/watchlist"
           className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent/90 active:scale-[0.98]"
         >
-          Portfolio
+          Watchlist
         </Link>
       </div>
     </div>
