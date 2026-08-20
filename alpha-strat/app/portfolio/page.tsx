@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Position } from "@/lib/types";
 import { AddPositionForm } from "./add-position-form";
 import { PortfolioDashboard } from "./portfolio-dashboard";
+import { SectionHeader } from "@/app/components/ui/section-header";
 
 export default async function PortfolioPage() {
   const supabase = await createClient();
@@ -20,27 +21,21 @@ export default async function PortfolioPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 py-12">
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-        Portfolio
-      </h1>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        Track your positions and see how your portfolio is allocated.
-      </p>
+    <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
+      <SectionHeader
+        title="Portfolio"
+        description="Track your positions and see how your portfolio is allocated."
+      />
 
-      <section className="mt-8">
-        <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
-          Add Position
-        </h2>
+      <section className="mt-6">
+        <SectionHeader title="Add Position" />
         <div className="mt-4">
           <AddPositionForm />
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
-          Your Positions
-        </h2>
+      <section className="mt-8">
+        <SectionHeader title="Your Positions" />
         <div className="mt-4">
           <PortfolioDashboard positions={(positions as Position[]) ?? []} />
         </div>

@@ -10,6 +10,7 @@ import {
 } from "@/lib/finance/pnl";
 import { deletePosition, addTransaction, type ActionResult } from "./actions";
 import { TransactionLog } from "./transaction-log";
+import { EmptyState } from "@/app/components/ui/empty-state";
 
 const initialState: ActionResult = {};
 
@@ -25,12 +26,12 @@ function DeleteButton({ id }: { id: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+        className="text-sm text-danger hover:opacity-80 disabled:opacity-50"
       >
         {isPending ? "..." : "Delete"}
       </button>
       {state.error && (
-        <span className="ml-2 text-xs text-red-500">{state.error}</span>
+        <span className="ml-2 text-xs text-danger">{state.error}</span>
       )}
     </form>
   );
@@ -63,19 +64,19 @@ function AddTransactionRow({
   }, [state.success, onDone]);
 
   return (
-    <tr className="border-b border-zinc-100 bg-zinc-50 dark:border-zinc-800/50 dark:bg-zinc-900/50">
+    <tr className="border-b border-border-primary bg-surface-tertiary">
       <td colSpan={colSpan} className="py-3 pl-6 pr-4">
         <form action={formAction} className="flex flex-wrap items-center gap-3">
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="type" value={type} />
-          <div className="flex rounded-md border border-zinc-300 text-sm dark:border-zinc-600">
+          <div className="flex rounded-md border border-border-secondary text-sm">
             <button
               type="button"
               onClick={() => setType("buy")}
               className={`px-3 py-1 rounded-l-md ${
                 type === "buy"
-                  ? "bg-emerald-600 text-white"
-                  : "bg-transparent text-zinc-500 dark:text-zinc-400"
+                  ? "bg-success text-white"
+                  : "bg-transparent text-text-secondary"
               }`}
             >
               Buy
@@ -85,14 +86,14 @@ function AddTransactionRow({
               onClick={() => setType("sell")}
               className={`px-3 py-1 rounded-r-md ${
                 type === "sell"
-                  ? "bg-red-600 text-white"
-                  : "bg-transparent text-zinc-500 dark:text-zinc-400"
+                  ? "bg-danger text-white"
+                  : "bg-transparent text-text-secondary"
               }`}
             >
               Sell
             </button>
           </div>
-          <label className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          <label className="flex items-center gap-1.5 text-xs text-text-secondary">
             Quantity
             <input
               type="number"
@@ -100,11 +101,11 @@ function AddTransactionRow({
               required
               min="0.0001"
               step="any"
-              className="w-24 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 tabular-nums focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="w-24 rounded border border-border-primary bg-surface-primary px-2 py-1 text-sm text-text-primary tabular-nums focus:border-accent focus:outline-none"
             />
           </label>
           {type === "buy" && (
-            <label className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <label className="flex items-center gap-1.5 text-xs text-text-secondary">
               Cost Basis
               <input
                 type="number"
@@ -112,12 +113,12 @@ function AddTransactionRow({
                 required
                 min="0.01"
                 step="0.01"
-                className="w-24 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 tabular-nums focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="w-24 rounded border border-border-primary bg-surface-primary px-2 py-1 text-sm text-text-primary tabular-nums focus:border-accent focus:outline-none"
               />
             </label>
           )}
           {type === "sell" && (
-            <label className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <label className="flex items-center gap-1.5 text-xs text-text-secondary">
               Sell Price
               <input
                 type="number"
@@ -125,35 +126,35 @@ function AddTransactionRow({
                 required
                 min="0.01"
                 step="0.01"
-                className="w-24 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 tabular-nums focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="w-24 rounded border border-border-primary bg-surface-primary px-2 py-1 text-sm text-text-primary tabular-nums focus:border-accent focus:outline-none"
               />
             </label>
           )}
-          <label className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          <label className="flex items-center gap-1.5 text-xs text-text-secondary">
             Date
             <input
               type="date"
               name="transacted_at"
               max={today}
-              className="w-36 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 tabular-nums focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="w-36 rounded border border-border-primary bg-surface-primary px-2 py-1 text-sm text-text-primary tabular-nums focus:border-accent focus:outline-none"
             />
           </label>
           <button
             type="submit"
             disabled={isPending}
-            className="rounded bg-zinc-900 px-3 py-1 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+            className="rounded bg-accent px-3 py-1 text-sm font-medium text-white disabled:opacity-50"
           >
             {isPending ? "..." : type === "buy" ? "Buy" : "Sell"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="text-sm text-text-secondary hover:text-text-primary"
           >
             Cancel
           </button>
           {state.error && (
-            <span className="text-xs text-red-500">{state.error}</span>
+            <span className="text-xs text-danger">{state.error}</span>
           )}
         </form>
       </td>
@@ -169,9 +170,9 @@ function formatUsd(value: number): string {
 }
 
 function pnlColor(value: number): string {
-  if (value > 0) return "text-emerald-600 dark:text-emerald-400";
-  if (value < 0) return "text-red-600 dark:text-red-400";
-  return "text-zinc-700 dark:text-zinc-300";
+  if (value > 0) return "text-success";
+  if (value < 0) return "text-danger";
+  return "text-text-secondary";
 }
 
 interface PositionsTableProps {
@@ -190,9 +191,10 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
 
   if (positions.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        No positions yet. Add one above to get started.
-      </p>
+      <EmptyState
+        title="No positions yet"
+        description="Add a position above to start tracking your portfolio."
+      />
     );
   }
 
@@ -239,32 +241,32 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-200 dark:border-zinc-800">
-            <th className="pb-2 pr-4 text-left font-medium text-zinc-500 dark:text-zinc-400">
+          <tr className="border-b border-border-primary">
+            <th className="pb-2 pr-4 text-left font-medium text-text-secondary">
               Ticker
             </th>
-            <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
               Shares
             </th>
-            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-text-secondary">
               Cost Basis
             </th>
-            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-text-secondary">
               Total Cost
             </th>
-            <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
               Current Price
             </th>
-            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="hidden md:table-cell pb-2 pr-4 text-right font-medium text-text-secondary">
               Market Value
             </th>
-            <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
               P/L ($)
             </th>
-            <th className="pb-2 pr-4 text-right font-medium text-zinc-500 dark:text-zinc-400">
+            <th className="pb-2 pr-4 text-right font-medium text-text-secondary">
               P/L (%)
             </th>
-            <th className="pb-2 text-right font-medium text-zinc-500 dark:text-zinc-400"></th>
+            <th className="pb-2 text-right font-medium text-text-secondary"></th>
           </tr>
         </thead>
         <tbody>
@@ -272,17 +274,15 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
             const isClosed = p.quantity === 0;
             const isExpanded = expandedPositionId === p.id;
             const mutedText = isClosed
-              ? "text-zinc-400 dark:text-zinc-600"
-              : "text-zinc-700 dark:text-zinc-300";
+              ? "text-text-tertiary"
+              : "text-text-secondary";
 
             return (
               <Fragment key={p.id}>
-                <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
+                <tr className="border-b border-border-primary">
                   <td
                     className={`py-3 pr-4 font-mono font-medium ${
-                      isClosed
-                        ? "text-zinc-400 dark:text-zinc-600"
-                        : "text-zinc-900 dark:text-zinc-100"
+                      isClosed ? "text-text-tertiary" : "text-text-primary"
                     }`}
                   >
                     <button
@@ -293,7 +293,7 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
                       className="flex items-center gap-1.5"
                     >
                       <span
-                        className={`inline-block text-xs text-zinc-400 transition-transform duration-200 dark:text-zinc-500 ${
+                        className={`inline-block text-xs text-text-tertiary transition-transform duration-200 ${
                           isExpanded ? "rotate-90" : ""
                         }`}
                       >
@@ -323,7 +323,7 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
                         ? mutedText
                         : pnl !== null
                         ? pnlColor(pnl)
-                        : "text-zinc-700 dark:text-zinc-300"
+                        : "text-text-secondary"
                     }`}
                   >
                     {pnl !== null ? `${pnl >= 0 ? "+" : ""}$${formatUsd(pnl)}` : "—"}
@@ -334,7 +334,7 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
                         ? mutedText
                         : pnlPercent !== null
                         ? pnlColor(pnlPercent)
-                        : "text-zinc-700 dark:text-zinc-300"
+                        : "text-text-secondary"
                     }`}
                   >
                     {pnlPercent !== null
@@ -344,7 +344,7 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
                   <td className="py-3 text-right">
                     <div className="flex items-center justify-end gap-3">
                       {isClosed ? (
-                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                        <span className="rounded bg-surface-tertiary px-1.5 py-0.5 text-xs font-medium text-text-secondary">
                           Closed
                         </span>
                       ) : (
@@ -355,7 +355,7 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
                               openTransactionId === p.id ? null : p.id
                             )
                           }
-                          className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                          className="text-sm text-text-secondary hover:text-text-primary"
                         >
                           {openTransactionId === p.id ? "Close" : "Add Transaction"}
                         </button>
@@ -365,7 +365,7 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
                   </td>
                 </tr>
                 {isExpanded && (
-                  <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
+                  <tr className="border-b border-border-primary">
                     <td colSpan={9} className="py-2 pl-6 pr-4">
                       <TransactionLog positionId={p.id} refreshKey={txRefreshKey} />
                     </td>
@@ -387,24 +387,20 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
           })}
         </tbody>
         <tfoot>
-          <tr className="border-t border-zinc-200 font-medium dark:border-zinc-800">
-            <td className="pt-3 pr-4 text-zinc-900 dark:text-zinc-100">
-              Total
-            </td>
+          <tr className="border-t border-border-primary font-medium">
+            <td className="pt-3 pr-4 text-text-primary">Total</td>
             <td className="pt-3 pr-4"></td>
             <td className="hidden md:table-cell pt-3 pr-4"></td>
-            <td className="hidden md:table-cell pt-3 pr-4 text-right tabular-nums text-zinc-900 dark:text-zinc-100">
+            <td className="hidden md:table-cell pt-3 pr-4 text-right tabular-nums text-text-primary">
               ${formatUsd(totalCost)}
             </td>
             <td className="pt-3 pr-4"></td>
-            <td className="hidden md:table-cell pt-3 pr-4 text-right tabular-nums text-zinc-900 dark:text-zinc-100">
+            <td className="hidden md:table-cell pt-3 pr-4 text-right tabular-nums text-text-primary">
               {hasAnyPrice ? `$${formatUsd(totalMarketValue)}` : "—"}
             </td>
             <td
               className={`pt-3 pr-4 text-right tabular-nums ${
-                hasAnyPrice
-                  ? pnlColor(totalPnl)
-                  : "text-zinc-900 dark:text-zinc-100"
+                hasAnyPrice ? pnlColor(totalPnl) : "text-text-primary"
               }`}
             >
               {hasAnyPrice
@@ -413,9 +409,7 @@ export function PositionsTable({ positions, quotes }: PositionsTableProps) {
             </td>
             <td
               className={`pt-3 pr-4 text-right tabular-nums ${
-                hasAnyPrice
-                  ? pnlColor(totalPnlPercent)
-                  : "text-zinc-900 dark:text-zinc-100"
+                hasAnyPrice ? pnlColor(totalPnlPercent) : "text-text-primary"
               }`}
             >
               {hasAnyPrice

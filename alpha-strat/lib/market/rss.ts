@@ -28,22 +28,12 @@ export const COMMODITY_KEYWORDS = [
   "natural gas", "platinum", "iron ore", "soybeans",
 ];
 
-function commodityFilter(title: string): boolean {
-  const lower = title.toLowerCase();
-  return COMMODITY_KEYWORDS.some((kw) => lower.includes(kw));
-}
-
 export const JOBS_KEYWORDS = [
   "jobs", "employment", "unemployment", "labor", "labour",
   "payroll", "hiring", "workforce", "wage", "wages",
   "nonfarm", "jobless", "cpi", "inflation", "gdp",
   "recession", "economic data", "consumer spending",
 ];
-
-function jobsFilter(title: string): boolean {
-  const lower = title.toLowerCase();
-  return JOBS_KEYWORDS.some((kw) => lower.includes(kw));
-}
 
 export const FEED_CONFIG: FeedConfig[] = [
   {

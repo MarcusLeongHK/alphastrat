@@ -11,6 +11,8 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { Card } from "@/app/components/ui/card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 interface PerformanceChartProps {
   positions: { ticker: string; quantity: number }[];
@@ -53,12 +55,12 @@ function CustomTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="font-medium text-zinc-900 dark:text-zinc-100">{label}</p>
+    <div className="rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm shadow-sm">
+      <p className="font-medium text-text-primary">{label}</p>
       {payload.map((item) => (
         <p
           key={item.dataKey}
-          className="tabular-nums text-zinc-500 dark:text-zinc-400"
+          className="tabular-nums text-text-secondary"
           style={{ color: item.color }}
         >
           {item.dataKey === "portfolio" ? "Portfolio" : item.dataKey}:{" "}
@@ -216,12 +218,12 @@ export function PerformanceChart({ positions }: PerformanceChartProps) {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+    <Card>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <h3 className="text-sm font-medium text-text-primary">
           Portfolio Performance
         </h3>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 flex">
+        <div className="rounded-lg border border-border-primary flex">
           {RANGES.map((r) => (
             <button
               key={r.value}
@@ -229,8 +231,8 @@ export function PerformanceChart({ positions }: PerformanceChartProps) {
               onClick={() => handleRangeChange(r.value)}
               className={`px-3 py-1 text-xs font-medium ${
                 range === r.value
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
+                  ? "bg-accent text-white"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               {r.label}
@@ -241,16 +243,13 @@ export function PerformanceChart({ positions }: PerformanceChartProps) {
 
       <div className="mt-4">
         {positions.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-text-secondary">
             Add positions to see portfolio performance.
           </p>
         ) : loading || !chartData ? (
-          <div
-            className="animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-800"
-            style={{ height: 350 }}
-          />
+          <Skeleton className="h-[350px] w-full" />
         ) : error ? (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-danger">{error}</p>
         ) : (
           <div style={{ width: "100%", height: 350 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -325,19 +324,19 @@ export function PerformanceChart({ positions }: PerformanceChartProps) {
               placeholder="Compare to... (e.g. SPY)"
               disabled={compareTickers.length >= MAX_COMPARE}
               autoComplete="off"
-              className="flex-1 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className="flex-1 rounded-md border border-border-primary bg-surface-primary px-3 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary disabled:opacity-50 focus:border-accent focus:outline-none"
             />
             <button
               type="button"
               onClick={handleAddCompare}
               disabled={compareTickers.length >= MAX_COMPARE}
-              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
               Add
             </button>
             {showCompareSuggestions && compareSuggestions.length > 0 && (
               <div
-                className="absolute z-10 w-full rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+                className="absolute z-10 w-full rounded-lg border border-border-primary bg-surface-primary shadow-lg"
                 style={{ top: "100%", left: 0, right: 0, marginTop: "0.25rem" }}
               >
                 {compareSuggestions.map((suggestion) => (
@@ -345,12 +344,12 @@ export function PerformanceChart({ positions }: PerformanceChartProps) {
                     key={suggestion.symbol}
                     type="button"
                     onClick={() => addCompareTicker(suggestion.symbol)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface-tertiary"
                   >
-                    <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                    <span className="font-mono font-medium text-text-primary">
                       {suggestion.symbol}
                     </span>
-                    <span className="truncate text-zinc-500 dark:text-zinc-400">
+                    <span className="truncate text-text-secondary">
                       {suggestion.name}
                     </span>
                   </button>
@@ -364,14 +363,14 @@ export function PerformanceChart({ positions }: PerformanceChartProps) {
               {compareTickers.map((ticker) => (
                 <span
                   key={ticker}
-                  className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 py-1 text-xs font-medium flex items-center gap-1.5 text-zinc-700 dark:text-zinc-300"
+                  className="rounded-full bg-surface-tertiary px-3 py-1 text-xs font-medium flex items-center gap-1.5 text-text-secondary"
                 >
                   {ticker}
                   <button
                     type="button"
                     onClick={() => handleRemoveCompare(ticker)}
                     aria-label={`Remove ${ticker}`}
-                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                    className="text-text-tertiary hover:text-text-secondary"
                   >
                     ×
                   </button>
@@ -381,6 +380,6 @@ export function PerformanceChart({ positions }: PerformanceChartProps) {
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

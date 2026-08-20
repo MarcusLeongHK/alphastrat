@@ -57,17 +57,17 @@ export function MobileNav({ user, logoutAction }: MobileNavProps) {
         className="relative flex h-11 w-11 flex-col items-center justify-center gap-1.5"
       >
         <span
-          className={`h-0.5 w-6 bg-zinc-900 transition-transform duration-200 dark:bg-zinc-100 ${
+          className={`h-0.5 w-6 bg-text-primary transition-transform duration-200 ${
             open ? "translate-y-2 rotate-45" : ""
           }`}
         />
         <span
-          className={`h-0.5 w-6 bg-zinc-900 transition-opacity duration-200 dark:bg-zinc-100 ${
+          className={`h-0.5 w-6 bg-text-primary transition-opacity duration-200 ${
             open ? "opacity-0" : "opacity-100"
           }`}
         />
         <span
-          className={`h-0.5 w-6 bg-zinc-900 transition-transform duration-200 dark:bg-zinc-100 ${
+          className={`h-0.5 w-6 bg-text-primary transition-transform duration-200 ${
             open ? "-translate-y-2 -rotate-45" : ""
           }`}
         />
@@ -81,7 +81,7 @@ export function MobileNav({ user, logoutAction }: MobileNavProps) {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 bg-black/50"
           />
-          <div className="pt-safe-top fixed inset-y-0 right-0 z-40 flex w-64 flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="pt-safe-top fixed inset-y-0 right-0 z-40 flex w-64 flex-col border-l border-border-primary bg-surface-primary">
             <nav className="flex flex-1 flex-col gap-1 p-4">
               {user ? (
                 <>
@@ -93,22 +93,22 @@ export function MobileNav({ user, logoutAction }: MobileNavProps) {
                         href={link.href}
                         className={`flex min-h-11 items-center rounded px-3 text-sm font-medium ${
                           isActive
-                            ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                            : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                            ? "bg-surface-tertiary text-text-primary"
+                            : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
                         }`}
                       >
                         {link.label}
                       </Link>
                     );
                   })}
-                  <div className="mt-auto flex flex-col gap-1 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-                    <span className="flex min-h-11 items-center px-3 text-sm text-zinc-500 dark:text-zinc-400">
+                  <div className="mt-auto flex flex-col gap-1 border-t border-border-primary pt-4">
+                    <span className="flex min-h-11 items-center px-3 text-sm text-text-tertiary">
                       {user.email}
                     </span>
                     <form action={logoutAction}>
                       <button
                         type="submit"
-                        className="flex min-h-11 w-full items-center rounded px-3 text-left text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                        className="flex min-h-11 w-full items-center rounded px-3 text-left text-sm text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
                       >
                         Log out
                       </button>
@@ -118,7 +118,7 @@ export function MobileNav({ user, logoutAction }: MobileNavProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="flex min-h-11 items-center rounded px-3 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  className="flex min-h-11 items-center rounded px-3 text-sm font-medium text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
                 >
                   Log in
                 </Link>

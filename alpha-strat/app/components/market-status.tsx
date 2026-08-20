@@ -11,10 +11,10 @@ interface StatusInfo {
 }
 
 const STATUS_BY_STATE: Record<MarketState, Omit<StatusInfo, "state">> = {
-  open: { label: "Market Open", dotClassName: "bg-emerald-500" },
-  pre: { label: "Pre-Market", dotClassName: "bg-amber-500" },
-  after: { label: "After Hours", dotClassName: "bg-amber-500" },
-  closed: { label: "Market Closed", dotClassName: "bg-red-500" },
+  open: { label: "Market Open", dotClassName: "bg-success" },
+  pre: { label: "Pre-Market", dotClassName: "bg-warning" },
+  after: { label: "After Hours", dotClassName: "bg-warning" },
+  closed: { label: "Market Closed", dotClassName: "bg-danger" },
 };
 
 /**
@@ -87,7 +87,7 @@ export function MarketStatus() {
   const { label, dotClassName } = STATUS_BY_STATE[state];
 
   return (
-    <span className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+    <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
       <span className={`h-2 w-2 rounded-full ${dotClassName}`} />
       {label}
     </span>

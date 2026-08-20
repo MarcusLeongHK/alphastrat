@@ -78,6 +78,10 @@
 - `app/watchlist/bottom-sheet.tsx` — swipe-to-dismiss bottom sheet for mobile detail panel
 - `app/api/market/batch-sentiment/route.ts` — Adanos batch compare API (shared cache, 24hr TTL)
 - `app/api/macro/market-mood/route.ts` — Adanos trending + market sentiment + sectors (shared cache, 24hr TTL)
+- `app/components/ui/` — shared UI components (Card, Badge, Skeleton, TabBar, EmptyState, DataRow, SectionHeader)
+- `app/components/nav-links.tsx` — client-side nav with active route indicator
+- `app/watchlist/tabs/` — per-tab components for ticker detail (overview, news, sentiment, thesis, earnings, options)
+- `app/watchlist/tabs/types.ts` — shared type definitions for ticker detail tabs
 
 ## Database Tables
 - `positions` — user_id, ticker, quantity, cost_basis (blended average)

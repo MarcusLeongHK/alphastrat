@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { filterRecentArticles, COMMODITY_KEYWORDS, JOBS_KEYWORDS, FEED_CONFIG } from "./rss";
 
 describe("filterRecentArticles", () => {

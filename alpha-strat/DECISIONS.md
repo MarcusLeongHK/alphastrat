@@ -1064,4 +1064,33 @@ Every significant architecture and implementation decision, with the options con
 
 ---
 
+## Phase 11: Visual Overhaul (2026-08-19)
+
+### Decision 58: Design Token System (Phase 11)
+**Context:** All colors were hardcoded as Tailwind `zinc-*` classes, duplicated across every component.
+**Decision:** Centralized CSS custom properties in `globals.css`, exposed via `@theme inline` for Tailwind class usage (`bg-surface-secondary`, `text-text-primary`, etc.).
+**Tradeoff:** Slight learning curve for new token names vs. consistent, themeable color system across the entire app.
+
+### Decision 59: Shared UI Component Library (Phase 11)
+**Context:** Cards, badges, tabs, and loading states were re-implemented differently on every page.
+**Decision:** Extracted 7 shared components to `app/components/ui/`: Card, Badge, Skeleton, TabBar, EmptyState, DataRow, SectionHeader.
+**Tradeoff:** Components are intentionally minimal (no complex prop APIs or variants) to avoid premature abstraction.
+
+### Decision 60: Ticker Detail Panel Refactor (Phase 11)
+**Context:** `ticker-detail-panel.tsx` was 1400+ lines with all 6 tabs in one file.
+**Decision:** Split into a thin shell parent + 6 focused tab components in `app/watchlist/tabs/`. Each tab owns its data fetching and state.
+**Tradeoff:** More files to navigate vs. each file is focused and independently modifiable.
+
+### Decision 61: Animation System (Phase 11)
+**Context:** Zero animations — all state changes were instant, contributing to an "AI-generated" feel.
+**Decision:** CSS-only animation system: `@keyframes` for shimmer/fade/slide, utility classes, `prefers-reduced-motion` respected. No animation library added.
+**Tradeoff:** CSS-only limits complex choreography but avoids bundle size increase and keeps animations performant (GPU-composited).
+
+### Decision 62: Dynamic Imports for Heavy Tabs (Phase 11)
+**Context:** Recharts bundles for earnings and options charts loaded on every watchlist page view.
+**Decision:** `next/dynamic` for EarningsTab and OptionsTab with skeleton fallbacks.
+**Tradeoff:** Brief loading skeleton on first tab click vs. faster initial page load.
+
+---
+
 *This log will be updated as new decisions are made in Phase 9+.*

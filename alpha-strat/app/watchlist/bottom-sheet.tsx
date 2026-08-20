@@ -85,7 +85,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="pb-safe-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl bg-white shadow-xl dark:bg-zinc-950"
+        className="pb-safe-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl bg-surface-primary shadow-xl"
         style={{
           transform: `translateY(${dragY}px)`,
           transition: isDragging ? "none" : "transform 0.2s ease-out",
@@ -95,18 +95,18 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         onTouchEnd={handleTouchEnd}
       >
         <div className="flex shrink-0 flex-col items-center pt-2">
-          <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+          <div className="h-1 w-10 rounded-full bg-border-secondary" />
         </div>
 
-        <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <span className="font-mono text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        <div className="flex shrink-0 items-center justify-between border-b border-border-primary px-4 py-3">
+          <span className="font-mono text-base font-semibold text-text-primary">
             {title}
           </span>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-text-tertiary hover:bg-surface-tertiary hover:text-text-primary"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -10,6 +10,9 @@ import { AllocationChart } from "./allocation-chart";
 import { RiskMetricsCard } from "./risk-metrics-card";
 import { PerformanceChart } from "./performance-chart";
 import { AiSummaryCard } from "./ai-summary-card";
+import { Card } from "@/app/components/ui/card";
+import { EmptyState } from "@/app/components/ui/empty-state";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 interface RiskMetrics {
   beta: number;
@@ -269,9 +272,10 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
 
   if (positions.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        No positions yet. Add one above to get started.
-      </p>
+      <EmptyState
+        title="No positions yet"
+        description="Add a position above to start tracking your portfolio."
+      />
     );
   }
 
@@ -285,22 +289,20 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
 
   return (
     <div className="flex flex-col gap-6 md:gap-8">
-      <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="flex items-center gap-2 text-xs text-text-secondary">
         {lastUpdated && <span>Updated {secondsAgo}s ago</span>}
         <button
           type="button"
           onClick={handleManualRefresh}
           disabled={refreshing}
-          className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          className="rounded p-1 text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:opacity-50"
           title="Refresh quotes"
         >
           <RefreshIcon spinning={refreshing} />
         </button>
       </div>
 
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {positions.length > 0 && (
         <PerformanceChart
@@ -318,20 +320,18 @@ export function PortfolioDashboard({ positions }: { positions: Position[] }) {
       <AiSummaryCard summary={aiSummary} loading={aiLoading} error={aiError} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <Card>
+          <h3 className="text-sm font-medium text-text-primary">
             Allocation
           </h3>
           <div className="mt-3">
             {loading ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Loading allocation…
-              </p>
+              <Skeleton className="h-[300px] w-full" />
             ) : (
               <AllocationChart data={allocationData} />
             )}
           </div>
-        </div>
+        </Card>
 
         <RiskMetricsCard
           metrics={metrics}
