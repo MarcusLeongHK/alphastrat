@@ -8,6 +8,7 @@ import { removeFromWatchlist, type ActionResult } from "./actions";
 import { TickerDetailPanel } from "./ticker-detail-panel";
 import { BottomSheet } from "./bottom-sheet";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { EmptyState } from "@/app/components/ui/empty-state";
 
 const initialState: ActionResult = {};
 
@@ -421,9 +422,10 @@ export function WatchlistDashboard({ items }: WatchlistDashboardProps) {
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-text-secondary">
-        No tickers in your watchlist. Add one above to get started.
-      </p>
+      <EmptyState
+        title="No tickers in your watchlist"
+        description="Add a ticker above to start tracking stocks."
+      />
     );
   }
 

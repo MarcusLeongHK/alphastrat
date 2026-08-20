@@ -15,10 +15,10 @@ export function formatRevenue(value: number): string {
 }
 
 export function ratingColor(key: string | null | undefined): string {
-  if (!key) return "text-zinc-500";
-  if (key === "strong_buy" || key === "buy") return "text-emerald-500";
-  if (key === "hold") return "text-amber-500";
-  return "text-red-500";
+  if (!key) return "text-text-secondary";
+  if (key === "strong_buy" || key === "buy") return "text-success";
+  if (key === "hold") return "text-warning";
+  return "text-danger";
 }
 
 export function formatRating(key: string): string {
