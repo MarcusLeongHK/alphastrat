@@ -42,14 +42,12 @@ function CustomTooltip({
   const { ticker, weight, marketValue } = payload[0].payload;
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="font-mono font-medium text-zinc-900 dark:text-zinc-100">
-        {ticker}
-      </p>
-      <p className="tabular-nums text-zinc-500 dark:text-zinc-400">
+    <div className="rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm shadow-sm">
+      <p className="font-mono font-medium text-text-primary">{ticker}</p>
+      <p className="tabular-nums text-text-secondary">
         {(weight * 100).toFixed(1)}%
       </p>
-      <p className="tabular-nums text-zinc-500 dark:text-zinc-400">
+      <p className="tabular-nums text-text-secondary">
         $
         {marketValue.toLocaleString(undefined, {
           minimumFractionDigits: 2,
@@ -69,7 +67,7 @@ function renderLabel(props: unknown) {
 export function AllocationChart({ data }: AllocationChartProps) {
   if (data.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-text-secondary">
         No allocation data available.
       </p>
     );

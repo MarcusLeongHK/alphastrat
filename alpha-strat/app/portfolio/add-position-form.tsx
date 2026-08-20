@@ -86,7 +86,7 @@ export function AddPositionForm() {
         <div className="relative flex flex-col gap-1.5">
           <label
             htmlFor="ticker"
-            className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="text-sm font-medium text-text-primary"
           >
             Ticker
           </label>
@@ -116,21 +116,21 @@ export function AddPositionForm() {
                 handleSelectSuggestion(suggestions[0].symbol);
               }
             }}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+            className="rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900" style={{ top: "100%" }}>
+            <div className="absolute z-10 mt-1 w-full rounded-lg border border-border-primary bg-surface-secondary shadow-lg" style={{ top: "100%" }}>
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion.symbol}
                   type="button"
                   onClick={() => handleSelectSuggestion(suggestion.symbol)}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface-tertiary"
                 >
-                  <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                  <span className="font-mono font-medium text-text-primary">
                     {suggestion.symbol}
                   </span>
-                  <span className="truncate text-zinc-500 dark:text-zinc-400">
+                  <span className="truncate text-text-secondary">
                     {suggestion.name}
                   </span>
                 </button>
@@ -141,7 +141,7 @@ export function AddPositionForm() {
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="quantity"
-            className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="text-sm font-medium text-text-primary"
           >
             Shares
           </label>
@@ -153,13 +153,13 @@ export function AddPositionForm() {
             min="0.0001"
             placeholder="10"
             required
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+            className="rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="cost_basis"
-            className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="text-sm font-medium text-text-primary"
           >
             Cost Basis ($)
           </label>
@@ -171,13 +171,13 @@ export function AddPositionForm() {
             min="0.01"
             placeholder="150.00"
             required
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+            className="rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="transacted_at"
-            className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="text-sm font-medium text-text-primary"
           >
             Date (optional)
           </label>
@@ -186,17 +186,17 @@ export function AddPositionForm() {
             name="transacted_at"
             type="date"
             max={today}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+            className="rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       </div>
       {state.error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+        <p className="text-sm text-danger">{state.error}</p>
       )}
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="self-start rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
       >
         {isPending ? "Adding..." : "Add Position"}
       </button>

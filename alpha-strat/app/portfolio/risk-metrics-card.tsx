@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Card } from "@/app/components/ui/card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 interface RiskMetricsCardProps {
   metrics: { beta: number; sharpe: number } | null;
@@ -9,22 +11,22 @@ interface RiskMetricsCardProps {
 }
 
 function betaColor(beta: number): string {
-  if (beta > 1) return "text-orange-600 dark:text-orange-400";
-  if (beta < 1) return "text-sky-600 dark:text-sky-400";
-  return "text-zinc-900 dark:text-zinc-100";
+  if (beta > 1) return "text-warning";
+  if (beta < 1) return "text-accent";
+  return "text-text-primary";
 }
 
 function sharpeColor(sharpe: number): string {
-  if (sharpe > 1) return "text-emerald-600 dark:text-emerald-400";
-  if (sharpe < 0) return "text-red-600 dark:text-red-400";
-  return "text-zinc-900 dark:text-zinc-100";
+  if (sharpe > 1) return "text-success";
+  if (sharpe < 0) return "text-danger";
+  return "text-text-primary";
 }
 
 function MetricSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-2">
-      <div className="h-3 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="h-7 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-3 w-16" />
+      <Skeleton className="h-7 w-20" />
     </div>
   );
 }
@@ -39,13 +41,13 @@ function Tooltip({ text }: { text: string }) {
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
         onClick={() => setShow((v) => !v)}
-        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-zinc-300 text-[10px] font-medium text-zinc-400 hover:text-zinc-600 dark:border-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-border-secondary text-[10px] font-medium text-text-tertiary hover:text-text-secondary"
         aria-label="More info"
       >
         ?
       </button>
       {show && (
-        <span className="absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-3 text-xs leading-relaxed text-zinc-600 shadow-lg dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+        <span className="absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded-lg border border-border-primary bg-surface-primary p-3 text-xs leading-relaxed text-text-secondary shadow-lg">
           {text}
         </span>
       )}
@@ -68,21 +70,19 @@ function Metric({
 }) {
   return (
     <div className="flex flex-1 flex-col gap-1">
-      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+      <span className="text-xs font-medium text-text-secondary">
         {label}
         {tooltip && <Tooltip text={tooltip} />}
       </span>
       <span
         className={`text-2xl font-semibold tabular-nums ${
-          valueClassName ?? "text-zinc-900 dark:text-zinc-100"
+          valueClassName ?? "text-text-primary"
         }`}
       >
         {value}
       </span>
       {subtitle && (
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-          {subtitle}
-        </span>
+        <span className="text-xs text-text-tertiary">{subtitle}</span>
       )}
     </div>
   );
@@ -94,8 +94,8 @@ export function RiskMetricsCard({
   error,
 }: RiskMetricsCardProps) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
-      <h2 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+    <Card>
+      <h2 className="mb-4 text-sm font-semibold text-text-primary">
         Risk Metrics
       </h2>
 
@@ -105,11 +105,9 @@ export function RiskMetricsCard({
           <MetricSkeleton />
         </div>
       ) : error ? (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
       ) : !metrics ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          No data available
-        </p>
+        <p className="text-sm text-text-secondary">No data available</p>
       ) : (
         <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
           <Metric
@@ -127,6 +125,6 @@ export function RiskMetricsCard({
           />
         </div>
       )}
-    </div>
+    </Card>
   );
 }
