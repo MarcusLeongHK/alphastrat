@@ -79,9 +79,9 @@ export function MobileNav({ user, logoutAction }: MobileNavProps) {
             type="button"
             aria-label="Close menu backdrop"
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-40 bg-black/50"
+            className="fixed inset-0 z-50 bg-black/50"
           />
-          <div className="pt-safe-top fixed inset-y-0 right-0 z-40 flex w-64 flex-col border-l border-border-primary bg-surface-primary">
+          <div className="fixed top-0 right-0 bottom-0 z-50 flex w-64 flex-col border-l border-border-primary bg-surface-primary pt-14">
             <nav className="flex flex-1 flex-col gap-1 p-4">
               {user ? (
                 <>

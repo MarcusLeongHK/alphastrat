@@ -524,6 +524,17 @@ export function OptionsTab({ ticker }: OptionsTabProps) {
           </Card>
         </>
       ) : null}
+
+      <p className="text-center text-xs text-text-tertiary">
+        <a
+          href="https://claude.ai/code/artifact/d42c5cf5-7df6-46a3-96be-6807a38889fe"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline transition-colors hover:text-text-secondary"
+        >
+          Read more about options here
+        </a>
+      </p>
     </div>
   );
 }
