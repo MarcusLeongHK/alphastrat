@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AlphaStrat
+
+A personal finance web app for portfolio analysis, market research, and options analytics.
+
+Built with Next.js 16, React 19, Supabase, and Tailwind CSS v4.
+
+> **Access-controlled** — signup requires an invite code.
+
+<!-- 
+  Add screenshots: place images in a `docs/images/` directory and uncomment the lines below.
+  Recommended screenshots:
+  1. Watchlist overview (desktop)
+  2. Ticker detail panel with chart
+  3. Options tab with expected move gauge
+  4. Portfolio dashboard
+  5. Macro dashboard
+  6. Mobile view (watchlist or portfolio)
+-->
+
+<!-- ![Watchlist](docs/images/watchlist.png) -->
+
+---
+
+## Features
+
+### Watchlist & Ticker Research
+- Real-time quotes via Yahoo Finance
+- Interactive price charts (1D to 5Y)
+- AI-generated investment thesis with bull/bear cases (Gemini Flash Lite)
+- News aggregation with AI-summarized themes (Groq)
+- Analyst ratings and price targets
+- Social sentiment analysis via Adanos (Reddit + Twitter/X)
+
+### Options Analytics
+- Expected move gauge with max pain overlay
+- IV surface, term structure, and positioning-by-strike charts
+- Greeks computed via Black-Scholes
+- Unusual activity detection (volume/OI > 2x)
+- AI narrative summary of options flow
+- [In-app educational guide](/guide/options) explaining every metric
+
+### Portfolio Dashboard
+- Position tracking with blended cost basis
+- P&L calculation (unrealized + realized)
+- Allocation breakdown by sector and ticker
+- Risk metrics: beta, Sharpe ratio, max drawdown (vs. SPY benchmark)
+- Performance chart with benchmark comparison
+
+### Macro Dashboard
+- RSS-sourced news across Fed policy, geopolitics, commodities, jobs, and government
+- AI-synthesized market outlook with sentiment badges and driver chips (Gemini)
+- Customizable section visibility per user
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16.3 (App Router) |
+| UI | React 19, Tailwind CSS v4, Recharts |
+| Auth | Supabase Auth (email/password, `@supabase/ssr`) |
+| Database | Supabase Postgres with Row-Level Security |
+| AI | Groq (Llama 3 — summaries, sentiment), Gemini Flash Lite (thesis, options, macro) |
+| Market Data | Yahoo Finance REST (v8/v10), Adanos API (social sentiment) |
+| Deployment | Vercel (free tier) |
+| Caching | Supabase-backed generic cache (`getOrFetch<T>()`) with per-type TTLs |
+
+---
+
+## Architecture Highlights
+
+- **No Python, no heavy SDKs** — all data fetching via direct `fetch()` calls to REST APIs
+- **Generic cache utility** — `lib/cache/index.ts` provides `getOrFetch<T>()` with composite upsert, user-scoped or shared cache modes
+- **Pure financial calculations** — `lib/finance/` contains unit-tested functions for P&L, risk metrics, Black-Scholes, allocation
+- **Design token system** — CSS custom properties (`--surface-primary`, `--text-primary`, etc.) for consistent theming
+- **Server Actions** for mutations, **API Routes** for data fetching
+- **Proxy-based auth** (Next.js 16 `proxy.ts`) for session refresh and route protection
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- A Supabase project
+- API keys for: Groq, Gemini, Adanos (optional)
+
+### Setup
+
+```bash
+git clone https://github.com/MarcusLeongHK/alphastrat.git
+cd alphastrat
+npm install
+```
+
+Create a `.env` file:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+GROQ_API_KEY=your_groq_key
+GEMINI_API_KEY=your_gemini_key
+ADANOS_API_KEY=your_adanos_key
+```
+
+Apply database migrations (in order):
+
+```bash
+# Run each .sql file in supabase/migrations/ against your Supabase project
+# via the Supabase dashboard SQL editor or CLI
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (port 3000) |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npx vitest` | Run tests |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/
+  page.tsx                    # Landing page
+  login/                      # Auth pages
+  signup/
+  watchlist/                  # Watchlist + ticker detail panel
+    tabs/                     # Per-tab components (overview, news, sentiment, thesis, earnings, options)
+  portfolio/                  # Portfolio dashboard
+  macro/                      # Macro news dashboard
+  guide/options/              # Options analytics educational guide
+  components/                 # Shared UI (Header, MobileNav, Card, Badge, etc.)
+  api/                        # API routes (market data, analysis, watchlist, macro)
+lib/
+  finance/                    # Pure calculation functions (pnl, risk, allocation, black-scholes)
+  market/                     # Data fetchers (Yahoo Finance, Adanos, RSS)
+  ai/                         # AI modules (thesis, news summary, options analysis, macro summary)
+  cache/                      # Generic cache utility
+  supabase/                   # Supabase client setup
+supabase/
+  migrations/                 # SQL migration files
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private project. All rights reserved.
