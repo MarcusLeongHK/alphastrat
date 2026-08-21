@@ -1,4 +1,4 @@
-# AlphaStrat
+# [AlphaStrat](https://alphastrat.vercel.app/)
 
 A personal finance web app for portfolio analysis, market research, and options analytics.
 
